@@ -1,12 +1,18 @@
 import express from 'express'
 import http from 'http'
+//server initializtion
 const app = express();
 const server = http.createServer(app);
+
+//repository layer
+import { IClientRepository } from './repository/IClientRepositoy';
+import { ClientRepository } from './repository/ClientRepository';
+const Iclient_repo : IClientRepository = ClientRepository.getInstance();
 
 //sevice layer
 import {ILoginService} from './service/Ilogin_service'
 import {LoginService} from './service/login_service'
-const Ilogin_service : ILoginService = new LoginService();
+const Ilogin_service : ILoginService = LoginService.getInstance(Iclient_repo);
 
 
 //controller layer
