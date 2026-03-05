@@ -1,1 +1,4 @@
-Interface ILoginService{}
+export interface ILoginService
+{
+    
+}
