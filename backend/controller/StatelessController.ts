@@ -1,9 +1,10 @@
-import express, {Express} from 'express'
+import express, {Express, NextFunction, RequestHandler, Request, Response} from 'express'
+import { z } from 'zod'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import path from 'path'
 import { ILoginService } from '../service/Ilogin_service'
-import { ILoginRequest } from '../requestFormat'
+import { ILoginRequest, login_schema } from '../requestFormat'
 
 
 export class StatelessController {
@@ -32,6 +33,19 @@ export class StatelessController {
         this.app.use(cookieParser());
 
         this.initRoutes();
+    }
+
+    private validateJSON(schema : z.ZodSchema) : RequestHandler
+    {
+        return (req : Request, res : Response, next : NextFunction) => {
+            const result = schema.safeParse(req.body);
+
+            if (!result.success)
+                res.status(400).json( {success : false, message : "failed to read json"} );
+
+            req.body = result.data;
+            next();
+        };
     }
 
 
@@ -77,7 +91,7 @@ export class StatelessController {
             }
         });
 
-        this.app.post("/api/login", (req, res) => {
+        this.app.post("/api/login", this.validateJSON(login_schema), (req, res) => {
 
             const req_body : ILoginRequest = req.body;
             const payload = this.Ilogin_service.userLogin(req_body);
