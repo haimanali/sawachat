@@ -1,6 +1,6 @@
 //sudo systemctl start mysql *start db on terminal*
-import mysql from 'mysql2/promise'
-import { toUpperCase } from 'zod';
+import mysql, { ResultSetHeader } from 'mysql2/promise'
+import { IDBQuery, IDBUpdate } from '../responseFormat';
 
 export class DBConn
 {
@@ -27,7 +27,13 @@ export class DBConn
             connectionLimit: 10
         });
     }
-    public async execute (){
+    public async executeUpdate(sql : string, params :any[]) : Promise<IDBUpdate>{
+        const [result] = await this.pool.execute(sql, params) as [ResultSetHeader, any[]];
+        return {affectedRows : result.affectedRows, insertId : result.insertId};
+    }
 
+    public async executeQuery<T> (sql : string, params :any[]) : Promise<IDBQuery<T>>{
+        const [result] = await this.pool.execute(sql, params) as [T[] , any[]];
+        return {data : result, count : result.length};
     }
 }

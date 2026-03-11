@@ -7,3 +7,12 @@ export const login_schema = z.object({
 });
 
 export type ILoginRequest = z.infer<typeof login_schema>;
+
+
+export const signup_schema = z.object({
+    username : z.string(),
+    nickname : z.string(),
+    password : z.string(),
+});
+
+export type ISignUpRequest = z.infer<typeof signup_schema>;

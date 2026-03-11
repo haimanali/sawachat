@@ -1,7 +1,10 @@
+import { IClient } from "../domain/IClient";
 
 
 export interface IClientRepository
 {
-    getUsername(session_id : string) : string;
-    compare(session_id : string, username : string) : boolean;
+    getUserBySessionID(session_id : string) : Promise<IClient | null>;
+    checkUserInfo(username : string, password : string) : Promise<IClient | null>;
+    insertUserRecord(username : string, nickname : string ,password : string) : Promise<void>;
+    insertUserSession(session_id: string, user_id: number, expire: Date): Promise<void>;
 }

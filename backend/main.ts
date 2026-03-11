@@ -11,8 +11,12 @@ const db_conn = DBConn.getInstance();
 const Iclient_repo : IClientRepository = ClientRepository.getInstance(db_conn);
 
 //sevice layer
-import {ILoginService} from './service/Ilogin_service'
-import {LoginService} from './service/login_service'
+import { ILoginService } from './service/ILoginService'
+import { LoginService } from './service/LoginService'
+import { ISignUpService } from './service/ISignUpService';
+import { SignUpService } from './service/SignUpService';
+
+const Isignup_service : ISignUpService = SignUpService.getInstance(Iclient_repo);
 const Ilogin_service : ILoginService = LoginService.getInstance(Iclient_repo);
 
 
@@ -20,7 +24,8 @@ const Ilogin_service : ILoginService = LoginService.getInstance(Iclient_repo);
 import {StatelessController} from './controller/StatelessController'
 import {StatefulController} from './controller/StatefulController'
 import { DBConn } from './repository/DBConn';
-const stateless_controller : StatelessController = StatelessController.getInstance(app, Ilogin_service);
+
+const stateless_controller : StatelessController = StatelessController.getInstance(app, Ilogin_service, Isignup_service);
 const stateful_controller : StatefulController = StatefulController.getInstance();
 
 server.on('upgrade', (req, soc, buff) => {
