@@ -23,6 +23,6 @@ export class SignUpService implements ISignUpService
 
         //overrides
         public async userSignUp(req_body: ISignUpRequest): Promise<void> {
-            await this.Iclient_repo.insertUserRecord(req_body.username, req_body.nickname, req_body.password);
+            await this.Iclient_repo.insertClientRecord(req_body.username, req_body.nickname, req_body.password);
         }
 }

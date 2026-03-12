@@ -24,7 +24,7 @@ export class LoginService implements ILoginService{
     //overrides
     public async verifySession(session_id : string, username? : string) : Promise<ILoginResponse>
     {
-        const client = await this.Iclient_repo.getUserBySessionID(session_id);
+        const client = await this.Iclient_repo.getClientBySessionID(session_id);
 
         if(!client)
         {
@@ -46,7 +46,7 @@ export class LoginService implements ILoginService{
 
     public async userLogin(req_body: ILoginRequest): Promise<ILoginResponse> 
     {
-        const client = await this.Iclient_repo.checkUserInfo(req_body.username, req_body.password);
+        const client = await this.Iclient_repo.checkClientInfo(req_body.username, req_body.password);
 
         if(!client)
             return {
@@ -60,7 +60,7 @@ export class LoginService implements ILoginService{
         else
             expire.getHours();
 
-        await this.Iclient_repo.insertUserSession(session_id, client.user_id, expire);
+        await this.Iclient_repo.insertClientSession(session_id, client.user_id, expire);
 
         return {
             success : true,

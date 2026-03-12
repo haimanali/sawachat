@@ -35,7 +35,8 @@ export class ClientRepository implements IClientRepository
     }
 
     //overrides
-    public async insertUserSession(session_id: string, user_id: number, expire: Date): Promise<void> {
+    
+    public async insertClientSession(session_id: string, user_id: number, expire: Date): Promise<void> {
         const sql = "insert into sessions (session_id, user_id, expire) values (UUID_TO_BIN(?), ?, ?)";
         
         const result = await this.db_conn.executeUpdate(sql, [session_id, user_id, expire]);
@@ -44,9 +45,9 @@ export class ClientRepository implements IClientRepository
             throw Error("something went wrong, please try again later.");
     }
 
-    public async getUserBySessionID(session_id: string): Promise<IClient | null> {
+    public async getClientBySessionID(session_id: string): Promise<IClient | null> {
         const sql = 
-        "select u.user_id, u.username, u.nickname, u.hash_pass from users as u join sessions as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?)";
+        "select u.user_id, u.username, u.nickname, u.hash_pass from clients as u join sessions as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?)";
         
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [session_id]);
 
@@ -62,8 +63,8 @@ export class ClientRepository implements IClientRepository
         };
     }
 
-    public async checkUserInfo(username: string, password: string): Promise<IClient | null>{
-        const sql = "select user_id, username, nickname, hash_pass from users where username = ?";
+    public async checkClientInfo(username: string, password: string): Promise<IClient | null>{
+        const sql = "select user_id, username, nickname, hash_pass from clients where username = ?";
 
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
         
@@ -83,8 +84,8 @@ export class ClientRepository implements IClientRepository
         : null;
     }
 
-    public async insertUserRecord(username: string, nickname: string, password: string): Promise<void> {
-        const sql = "insert into users (username, nickname, hash_pass) values (?, ?, ?)";
+    public async insertClientRecord(username: string, nickname: string, password: string): Promise<void> {
+        const sql = "insert into clients (username, nickname, hash_pass) values (?, ?, ?)";
 
         const hash_pass = await this.hashPassword(password);
         const result = await this.db_conn.executeUpdate(sql, [username, nickname, hash_pass]);

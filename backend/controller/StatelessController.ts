@@ -109,6 +109,23 @@ export class StatelessController {
             res.sendFile(path.resolve("frontend/public/index.html"));
         }));
 
+        this.app.get("/@:username" , this.errorHandler(async (req : Request, res : Response) => {
+
+            const username = ((req.params.username) as string).trim();
+            const session_id = req.cookies.session_id;
+            if(session_id)
+            {
+                const result = await this.Ilogin_service.verifySession(session_id, username)
+                if(result.success)
+                {
+                    res.sendFile(path.resolve("frontend/private/home.html"));
+                    return;
+                }
+            }
+            res.redirect("/login");
+
+        }));
+
         this.app.get("/:page", this.errorHandler(async (req : Request, res : Response) => {
             const target = ((req.params.page) as string).trim();
             const site_pages = ["login", "signup"];
@@ -119,17 +136,7 @@ export class StatelessController {
             }
             else
             {
-                const session_id = req.cookies.session_id;
-                if(session_id)
-                {
-                    const result = await this.Ilogin_service.verifySession(session_id, target)
-                    if(result.success)
-                    {
-                        res.sendFile(path.resolve("frontend/private/home.html"));
-                        return;
-                    }
-                }
-                res.redirect("/login");
+                res.sendFile(path.resolve(`frontend/private/errro.html`));
             }
         }));
 
