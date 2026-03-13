@@ -49,11 +49,11 @@
 
                 <form id="nickname-form" class="form-full" novalidate>
                     <div class="input-group">
-                        <label for="reg-username">Unique Username (Optional)</label>
+                        <label for="reg-username">Unique Username</label>
                         <div class="input-wrapper">
                             <span class="input-prefix">@</span>
-                            <input type="text" id="reg-username" name="username" placeholder="Leave blank to auto-generate"
-                                autocomplete="off" autocapitalize="none" spellcheck="false" pattern="[A-Za-z0-9_]{3,20}">
+                            <input type="text" id="reg-username" name="username" placeholder="choose_a_username"
+                                autocomplete="off" autocapitalize="none" spellcheck="false" pattern="[A-Za-z0-9_]{3,20}" required>
                         </div>
                         <p class="input-hint">3–20 letters, numbers, or underscores. Cannot be changed later.</p>
                     </div>
@@ -76,8 +76,6 @@
                         Continue
                     </button>
                 </form>
-
-                <p class="fine-print">If you leave the username blank, a highly secure anonymous ID will be generated for you automatically.</p>
             </div>
         </section>
 
@@ -188,12 +186,12 @@
 
                 <h2 class="card-title">Account Created!</h2>
                 <p class="card-subtitle">
-                    Your anonymous account is ready.<br>
-                    Save your User ID / Username — you'll need it to log in.
+                    Your secure account is ready.<br>
+                    You can now log in using your username.
                 </p>
 
                 <div class="id-box">
-                    <p class="id-label">Your Username / ID</p>
+                    <p class="id-label">Your Username</p>
                     <p class="id-value" id="generated-id">—</p>
                     <button type="button" class="copy-btn" id="copy-id-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -202,16 +200,6 @@
                         </svg>
                         <span id="copy-label">Copy ID</span>
                     </button>
-                </div>
-
-                <div class="warn-box">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    This ID cannot be recovered if lost. Store it safely.
                 </div>
 
                 <a href="login.html" class="btn-primary btn-full" style="margin-top:24px; text-align:center;">

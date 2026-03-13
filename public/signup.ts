@@ -94,7 +94,7 @@ document.getElementById("back-to-nickname")?.addEventListener("click", () => {
         const user = (document.getElementById("reg-username") as HTMLInputElement).value.trim();
         
         if (nick.length < 2) { toast("❌ Nickname must be at least 2 characters"); return; }
-        if (user && !/^[A-Za-z0-9_]{3,20}$/.test(user)) {
+        if (!/^[A-Za-z0-9_]{3,20}$/.test(user)) {
             toast("❌ Username must be 3-20 letters, numbers, or underscores");
             return;
         }
@@ -134,8 +134,9 @@ const errorText = document.getElementById("signup-error-text") as HTMLElement;
         signupBtn.classList.add("is-loading");
 
         try {
-            // The server generates the anonymous username/ID if left blank
-            // We send username (empty or custom) + nickname + password
+            // We send chosen user username + nickname + password
+            // The system DB will generate an internal ID under the hood,
+            // but the user only interacts with their username.
             const result = await apiCall(API_URL, "POST", {
                 username: chosenUsername,
                 nickname: chosenNickname,
