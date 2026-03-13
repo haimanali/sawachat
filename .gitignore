@@ -1,0 +1,7 @@
+# Compiled JS output (keep .ts as source of truth)
+public/*.js
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
