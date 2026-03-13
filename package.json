@@ -1,0 +1,24 @@
+{
+  "name": "sawachat_web",
+  "version": "1.0.0",
+  "main": "script.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petrosoudah/sawachat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/petrosoudah/sawachat/issues"
+  },
+  "homepage": "https://github.com/petrosoudah/sawachat#readme",
+  "description": "",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
