@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SawaChat | Secure & Private Messaging</title>
     <meta name="description"
-        content="SawaChat: Secure, anonymous messaging with Hybrid E2EE and AI-powered content moderation. No phone number or email required.">
+        content="SawaChat: Anonymous, secure messaging with Hybrid E2EE and AI-powered moderation. No phone or email required.">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,6 @@
 
 <body>
 
-    <!-- Animated Background Orbs -->
     <div class="bg-layer" aria-hidden="true">
         <div class="bg-orb orb-1"></div>
         <div class="bg-orb orb-2"></div>
@@ -25,460 +24,84 @@
 
     <div class="page-wrapper">
 
-        <!-- ── App Header (always visible) ─────────────────── -->
         <header class="app-header">
-            <img src="appmark.png" alt="SawaChat" class="app-logo" id="header-logo">
+            <img src="appmark.png" alt="SawaChat" class="app-logo">
             <h1 class="app-name">SawaChat</h1>
-            <p class="app-tagline" id="header-tagline">Secure messaging with AI-powered safety</p>
+            <p class="app-tagline">Secure messaging with AI-powered safety</p>
         </header>
 
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 1 · WELCOME
-        ══════════════════════════════════════════════════ -->
-        <div class="screen active" id="screen-welcome">
-            <div class="card">
-                <div class="card-body">
-                    <h2 class="card-title">Get Started</h2>
-                    <p class="card-subtitle">Join anonymously — no phone or email needed</p>
+        <main class="card" id="welcome-card">
+            <div class="card-body">
+                <h2 class="card-title">Get Started</h2>
+                <p class="card-subtitle">Join anonymously — no phone or email needed</p>
 
-                    <div class="btn-stack">
-                        <button class="btn-primary btn-icon" id="btn-create-account">
-                            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <line x1="19" y1="8" x2="19" y2="14" />
-                                <line x1="22" y1="11" x2="16" y2="11" />
-                            </svg>
-                            Create New Account
-                        </button>
-
-                        <button class="btn-outline btn-icon" id="btn-go-login">
-                            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                                <polyline points="10 17 15 12 10 7" />
-                                <line x1="15" y1="12" x2="3" y2="12" />
-                            </svg>
-                            Login to Existing Account
-                        </button>
-                    </div>
-
-                    <div class="feature-list">
-                        <div class="feature-item">
-                            <span class="feature-icon shield-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                </svg>
-                            </span>
-                            <span>Hybrid E2EE encryption</span>
-                        </div>
-                        <div class="feature-item">
-                            <span class="feature-icon ai-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2a10 10 0 1 0 10 10" />
-                                    <path d="M12 6v6l4 2" />
-                                    <circle cx="18" cy="6" r="3" fill="currentColor" />
-                                </svg>
-                            </span>
-                            <span>AI-powered moderation</span>
-                        </div>
-                        <div class="feature-item">
-                            <span class="feature-icon anon-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                    <circle cx="12" cy="7" r="4" />
-                                </svg>
-                            </span>
-                            <span>Anonymous user IDs</span>
-                        </div>
-                        <div class="feature-item">
-                            <span class="feature-icon phone-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="1" y1="1" x2="23" y2="23" />
-                                    <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
-                                    <path d="M5 5a10.94 10.94 0 0 0 5.82 14.55" />
-                                    <path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
-                                    <path d="M1.42 9a15.91 15.91 0 0 0 3.07 7.06" />
-                                    <path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
-                                </svg>
-                            </span>
-                            <span>No phone number required</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 2 · REGISTER — Nickname
-        ══════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-register-nickname">
-            <div class="card">
-                <button class="btn-back" id="back-to-welcome-from-nickname">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Back
-                </button>
-                <div class="card-body center-content">
-                    <div class="avatar-ring">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
+                <div class="btn-stack">
+                    <a href="signup.html" class="btn-primary btn-icon" id="btn-create-account">
+                        <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <line x1="19" y1="8" x2="19" y2="14" />
+                            <line x1="22" y1="11" x2="16" y2="11" />
                         </svg>
-                    </div>
+                        Create New Account
+                    </a>
 
-                    <h2 class="card-title">Choose a Nickname</h2>
-                    <p class="card-subtitle">This is how others will see you</p>
-
-                    <form id="nickname-form" class="form-full">
-                        <div class="input-group">
-                            <label for="reg-nickname">Nickname</label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                        <circle cx="12" cy="7" r="4" />
-                                    </svg>
-                                </span>
-                                <input type="text" id="reg-nickname" placeholder="Enter your nickname"
-                                    autocomplete="off" required minlength="2" maxlength="30">
-                            </div>
-                            <p class="input-hint">2–30 characters. Can be changed later in settings.</p>
-                        </div>
-
-                        <button type="submit" class="btn-primary btn-full" id="btn-continue-nickname">
-                            Continue
-                        </button>
-                    </form>
-
-                    <p class="fine-print">
-                        A unique anonymous ID will be generated for you automatically
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 3 · REGISTER — Password
-        ══════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-register-password">
-            <div class="card">
-                <button class="btn-back" id="back-to-nickname">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Back
-                </button>
-                <div class="card-body center-content">
-                    <div class="avatar-ring">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    <a href="login.html" class="btn-outline btn-icon" id="btn-go-login">
+                        <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                            <polyline points="10 17 15 12 10 7" />
+                            <line x1="15" y1="12" x2="3" y2="12" />
                         </svg>
-                    </div>
-
-                    <h2 class="card-title">Set Your Password</h2>
-                    <p class="card-subtitle">Secure your anonymous account</p>
-
-                    <form id="password-form" class="form-full">
-                        <div class="input-group">
-                            <label for="reg-password">Password</label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                    </svg>
-                                </span>
-                                <input type="password" id="reg-password" placeholder="Min. 8 characters" required
-                                    minlength="8">
-                                <button type="button" class="toggle-pw" data-target="reg-password">
-                                    <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                    <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path
-                                            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="strength-bar">
-                                <div class="strength-fill" id="strength-fill"></div>
-                            </div>
-                            <p class="strength-label" id="strength-label"></p>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="reg-confirm">Confirm Password</label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                </span>
-                                <input type="password" id="reg-confirm" placeholder="Repeat your password" required>
-                                <button type="button" class="toggle-pw" data-target="reg-confirm">
-                                    <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                    <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path
-                                            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn-primary btn-full">Continue</button>
-                    </form>
+                        Login to Existing Account
+                    </a>
                 </div>
-            </div>
-        </div>
 
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 4 · REGISTER — Biometric Setup
-        ══════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-biometric">
-            <div class="card">
-                <button class="btn-back" id="back-to-password">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Back
-                </button>
-                <div class="card-body center-content">
-                    <h2 class="card-title">Biometric Setup</h2>
-                    <p class="card-subtitle" style="color: var(--primary)">Choose your authentication method</p>
-
-                    <div class="btn-stack" style="margin-top: 4px;">
-                        <button class="btn-primary btn-icon" id="btn-setup-face">
-                            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 6C4 4.896 4.896 4 6 4H8" />
-                                <path d="M16 4H18C19.104 4 20 4.896 20 6V8" />
-                                <path d="M20 16V18C20 19.104 19.104 20 18 20H16" />
-                                <path d="M8 20H6C4.896 20 4 19.104 4 18V16" />
-                                <path d="M9 10C9 10 10 11 12 11C14 11 15 10 15 10" />
-                                <path d="M9 15C10.5 16.5 13.5 16.5 15 15" />
-                                <circle cx="9" cy="8.5" r="0.5" fill="currentColor" />
-                                <circle cx="15" cy="8.5" r="0.5" fill="currentColor" />
-                            </svg>
-                            Setup Face ID
-                        </button>
-
-                        <button class="btn-outline btn-icon" id="btn-setup-fingerprint">
-                            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path
-                                    d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04.054-.09A13.916 13.916 0 0 0 8 11a4 4 0 1 1 8 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0 0 15.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 0 0 4 11" />
-                            </svg>
-                            Setup Fingerprint
-                        </button>
-
-                        <button class="btn-ghost" id="btn-skip-bio">Skip for now</button>
-                    </div>
-
-                    <div class="privacy-note">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        Your biometric data never leaves your device.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 5 · BIOMETRIC SCANNING (animation)
-        ══════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-scanning">
-            <div class="card">
-                <button class="btn-back" id="back-from-scanning">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Back
-                </button>
-                <div class="card-body center-content">
-                    <div class="scan-wrap">
-                        <div class="scan-ring ring-outer"></div>
-                        <div class="scan-ring ring-inner"></div>
-                        <div class="scan-icon" id="scan-icon"></div>
-                    </div>
-                    <h2 class="card-title" id="scan-title">Setting up...</h2>
-                    <p class="card-subtitle" id="scan-sub" style="color: var(--primary)">Place your finger on the sensor
-                    </p>
-                    <div class="privacy-note">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        Your biometric data never leaves your device.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 6 · REGISTRATION SUCCESS — Show Generated ID
-        ══════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-success">
-            <div class="card">
-                <div class="card-body center-content">
-                    <div class="success-anim">
-                        <div class="success-ring"></div>
-                        <svg class="success-check" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="3">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                    </div>
-
-                    <h2 class="card-title">Account Created!</h2>
-                    <p class="card-subtitle">Your anonymous account is ready. <br>Save your User ID — you'll need it to
-                        log in.</p>
-
-                    <div class="id-box">
-                        <p class="id-label">Your Anonymous User ID</p>
-                        <p class="id-value" id="generated-id">—</p>
-                        <button class="copy-btn" id="copy-id-btn">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span class="feature-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                             </svg>
-                            <span id="copy-label">Copy ID</span>
-                        </button>
+                        </span>
+                        <span>Hybrid E2EE encryption</span>
                     </div>
-
-                    <div class="warn-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                            <line x1="12" y1="9" x2="12" y2="13" />
-                            <line x1="12" y1="17" x2="12.01" y2="17" />
-                        </svg>
-                        This ID cannot be recovered if lost. Store it safely.
-                    </div>
-
-                    <button class="btn-primary btn-full" id="btn-start-chatting" style="margin-top: 24px;">
-                        Start Chatting
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════════════════════════════════════════
-             SCREEN 7 · LOGIN
-        ══════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-login">
-            <div class="card">
-                <button class="btn-back" id="back-to-welcome-from-login">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Back
-                </button>
-                <div class="card-body center-content">
-                    <p class="time-greeting" id="greeting-text">Welcome Back</p>
-                    <p class="card-subtitle">Login with your anonymous ID</p>
-
-                    <form id="login-form" class="form-full">
-                        <div class="input-group">
-                            <label for="login-id">Unique User ID</label>
-                            <div class="input-wrapper">
-                                <span class="input-prefix">@</span>
-                                <input type="text" id="login-id" placeholder="USER12345678" autocomplete="off" required>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="login-pw">Password</label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                    </svg>
-                                </span>
-                                <input type="password" id="login-pw" placeholder="••••••••" required>
-                                <button type="button" class="toggle-pw" data-target="login-pw">
-                                    <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                    <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path
-                                            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                        <line x1="1" y1="1" x2="23" y2="23" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="error-msg hidden" id="login-error">
+                    <div class="feature-item">
+                        <span class="feature-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="15" y1="9" x2="9" y2="15" />
-                                <line x1="9" y1="9" x2="15" y2="15" />
+                                <path d="M12 2a10 10 0 1 0 10 10" />
+                                <path d="M12 6v6l4 2" />
+                                <circle cx="18" cy="6" r="3" fill="currentColor" />
                             </svg>
-                            Invalid User ID or password. Please try again.
-                        </div>
-
-                        <button type="submit" class="btn-primary btn-full btn-loader-wrap" id="login-submit-btn">
-                            <span class="btn-label">Login to Existing Account</span>
-                            <div class="btn-spinner"></div>
-                        </button>
-                    </form>
-
-                    <div class="divider"><span>OR AUTHENTICATE</span></div>
-
-                    <div class="bio-row">
-                        <button class="bio-card" id="login-face">
-                            <div class="bio-card-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                    <path d="M4 6C4 4.896 4.896 4 6 4H8" />
-                                    <path d="M16 4H18C19.104 4 20 4.896 20 6V8" />
-                                    <path d="M20 16V18C20 19.104 19.104 20 18 20H16" />
-                                    <path d="M8 20H6C4.896 20 4 19.104 4 18V16" />
-                                    <path d="M9 10C9 10 10 11 12 11C14 11 15 10 15 10" />
-                                    <path d="M9 15C10.5 16.5 13.5 16.5 15 15" />
-                                    <circle cx="9" cy="8.5" r="0.5" fill="white" />
-                                    <circle cx="15" cy="8.5" r="0.5" fill="white" />
-                                </svg>
-                            </div>
-                            <span>Login with Face ID</span>
-                        </button>
-
-                        <button class="bio-card" id="login-fingerprint">
-                            <div class="bio-card-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                    <path
-                                        d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04.054-.09A13.916 13.916 0 0 0 8 11a4 4 0 1 1 8 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0 0 15.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 0 0 4 11" />
-                                </svg>
-                            </div>
-                            <span>Login with Fingerprint</span>
-                        </button>
+                        </span>
+                        <span>AI-powered moderation</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                        </span>
+                        <span>Anonymous user IDs</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                                <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+                                <path d="M5 5a10.94 10.94 0 0 0 5.82 14.55" />
+                            </svg>
+                        </span>
+                        <span>No phone number required</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
 
-    </div><!-- /page-wrapper -->
+    </div>
 
-    <!-- Toast -->
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
-    <script src="script.js"></script>
 </body>
 
 </html>

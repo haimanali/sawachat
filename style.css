@@ -467,6 +467,7 @@ body {
     color: var(--text);
     transition: var(--t);
     -webkit-appearance: none;
+    appearance: none;
 }
 
 .input-wrapper input:focus {
@@ -1037,4 +1038,104 @@ body {
     .bio-row {
         grid-template-columns: 1fr;
     }
+}
+
+/* ═══════════════════════════════════════════════
+   STEP CARDS — signup.html multi-step
+═══════════════════════════════════════════════ */
+.step-card {
+    display: none;
+    width: 100%;
+}
+
+.step-card.active {
+    display: block;
+    animation: screenIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* btn-primary / btn-outline used as <a> tags */
+a.btn-primary,
+a.btn-outline {
+    display: flex;
+    text-decoration: none;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════
+   REMEMBER-ME CHECKBOX
+═══════════════════════════════════════════════ */
+.remember-row {
+    margin-bottom: 18px;
+}
+
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-sub);
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--t);
+}
+
+.checkbox-label input:checked~.checkbox-custom {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkbox-label input:checked~.checkbox-custom::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 9px;
+    border: 2px solid white;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+
+/* ═══════════════════════════════════════════════
+   FORM FOOTER LINK  (login.html)
+═══════════════════════════════════════════════ */
+.form-footer {
+    margin-top: 20px;
+    font-size: 13.5px;
+    color: var(--text-sub);
+    text-align: center;
+}
+
+.form-footer a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* btn-back as <a> tag */
+a.btn-back {
+    display: inline-flex;
+    text-decoration: none;
 }

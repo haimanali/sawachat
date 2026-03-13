@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SawaChat | Create Account</title>
+    <meta name="description" content="Create an anonymous SawaChat account. No phone number or email required.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="bg-layer" aria-hidden="true">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+    </div>
+
+    <div class="page-wrapper">
+
+        <header class="app-header">
+            <img src="appmark.png" alt="SawaChat" class="app-logo">
+            <h1 class="app-name">SawaChat</h1>
+            <p class="app-tagline" id="step-tagline">Create your account</p>
+        </header>
+
+        <!-- ── Step 1: Nickname ─────────────────────────── -->
+        <section class="card step-card active" id="step-nickname" aria-label="Step 1: Choose a nickname">
+            <a href="index.html" class="btn-back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Back
+            </a>
+            <div class="card-body center-content">
+                <div class="avatar-ring">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                </div>
+                <h2 class="card-title">Choose a Nickname</h2>
+                <p class="card-subtitle">This is how others will see you</p>
+
+                <form id="nickname-form" class="form-full" novalidate>
+                    <div class="input-group">
+                        <label for="reg-nickname">Nickname</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            </span>
+                            <input type="text" id="reg-nickname" name="nickname" placeholder="Enter your nickname"
+                                autocomplete="off" autocapitalize="words" required minlength="2" maxlength="30">
+                        </div>
+                        <p class="input-hint">2–30 characters. You can change this later in settings.</p>
+                    </div>
+                    <button type="submit" class="btn-primary btn-full" id="btn-next-nickname">
+                        Continue
+                    </button>
+                </form>
+
+                <p class="fine-print">A unique anonymous ID will be generated for you automatically</p>
+            </div>
+        </section>
+
+        <!-- ── Step 2: Password ─────────────────────────── -->
+        <section class="card step-card" id="step-password" aria-label="Step 2: Set a password">
+            <button type="button" class="btn-back" id="back-to-nickname">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Back
+            </button>
+            <div class="card-body center-content">
+                <div class="avatar-ring">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                </div>
+                <h2 class="card-title">Set Your Password</h2>
+                <p class="card-subtitle">Secure your anonymous account</p>
+
+                <form id="password-form" class="form-full" novalidate>
+                    <div class="input-group">
+                        <label for="reg-password">Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                            </span>
+                            <input type="password" id="reg-password" name="password" placeholder="Min. 8 characters"
+                                autocomplete="new-password" required minlength="8">
+                            <button type="button" class="toggle-pw" data-target="reg-password"
+                                aria-label="Toggle password">
+                                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                                <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                    <line x1="1" y1="1" x2="23" y2="23" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="strength-bar">
+                            <div class="strength-fill" id="strength-fill"></div>
+                        </div>
+                        <p class="strength-label" id="strength-label"></p>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-confirm">Confirm Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <input type="password" id="reg-confirm" name="confirm" placeholder="Repeat your password"
+                                autocomplete="new-password" required>
+                            <button type="button" class="toggle-pw" data-target="reg-confirm"
+                                aria-label="Toggle confirm password">
+                                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                                <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                    <line x1="1" y1="1" x2="23" y2="23" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="error-msg hidden" id="signup-error">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg>
+                        <span id="signup-error-text">Something went wrong. Please try again.</span>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-full btn-loader-wrap" id="signup-btn">
+                        <span class="btn-label">Create Account</span>
+                        <div class="btn-spinner"></div>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ── Step 3: Success — show generated ID ─────── -->
+        <section class="card step-card" id="step-success" aria-label="Account created">
+            <div class="card-body center-content">
+                <div class="success-anim">
+                    <div class="success-ring"></div>
+                    <svg class="success-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                </div>
+
+                <h2 class="card-title">Account Created!</h2>
+                <p class="card-subtitle">
+                    Your anonymous account is ready.<br>
+                    Save your User ID — you'll need it to log in.
+                </p>
+
+                <div class="id-box">
+                    <p class="id-label">Your Anonymous User ID</p>
+                    <p class="id-value" id="generated-id">—</p>
+                    <button type="button" class="copy-btn" id="copy-id-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        <span id="copy-label">Copy ID</span>
+                    </button>
+                </div>
+
+                <div class="warn-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    This ID cannot be recovered if lost. Store it safely.
+                </div>
+
+                <a href="login.html" class="btn-primary btn-full" style="margin-top:24px; text-align:center;">
+                    Go to Login
+                </a>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <!-- Compiled from public/signup.ts -->
+    <script type="module" src="public/signup.js"></script>
+</body>
+
+</html>
