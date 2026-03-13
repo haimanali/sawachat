@@ -17,6 +17,7 @@ const API_URL = "http://localhost:3000/api/signup";
 
 /* ── State ────────────────────────────────────────── */
 let chosenNickname = "";
+let chosenUsername = "";
 
 /* ── Helpers ──────────────────────────────────────── */
 function toast(msg: string, ms = 2800): void {
@@ -90,8 +91,16 @@ document.getElementById("back-to-nickname")?.addEventListener("click", () => {
     ?.addEventListener("submit", (e: Event) => {
         e.preventDefault();
         const nick = (document.getElementById("reg-nickname") as HTMLInputElement).value.trim();
+        const user = (document.getElementById("reg-username") as HTMLInputElement).value.trim();
+        
         if (nick.length < 2) { toast("❌ Nickname must be at least 2 characters"); return; }
+        if (user && !/^[A-Za-z0-9_]{3,20}$/.test(user)) {
+            toast("❌ Username must be 3-20 letters, numbers, or underscores");
+            return;
+        }
+
         chosenNickname = nick;
+        chosenUsername = user;
         setTagline("Secure your account");
         showStep("step-password");
     });
@@ -108,20 +117,27 @@ const errorText = document.getElementById("signup-error-text") as HTMLElement;
         const pw = (document.getElementById("reg-password") as HTMLInputElement).value;
         const pw2 = (document.getElementById("reg-confirm") as HTMLInputElement).value;
 
+        const hasUpper = /[A-Z]/.test(pw);
+        const hasLower = /[a-z]/.test(pw);
+        const hasNum   = /[0-9]/.test(pw);
+        const hasSpec  = /[^A-Za-z0-9]/.test(pw);
+
         if (pw.length < 8) { toast("❌ Password must be at least 8 characters"); return; }
+        if (!hasUpper || !hasLower || !hasNum || !hasSpec) {
+            toast("❌ Password must contain uppercase, lowercase, number, and special character.");
+            return;
+        }
         if (pw !== pw2) { toast("❌ Passwords do not match"); return; }
-        if (calcStrength(pw) < 2) { toast("⚠️ Password is too weak. Add numbers or symbols."); return; }
 
         // Hide previous errors, show loading
         errorEl.classList.add("hidden");
         signupBtn.classList.add("is-loading");
 
         try {
-            // The server generates the anonymous username/ID
-            // We send nickname + password; username field is intentionally empty
-            // and the server will return the generated username in the response.
+            // The server generates the anonymous username/ID if left blank
+            // We send username (empty or custom) + nickname + password
             const result = await apiCall(API_URL, "POST", {
-                username: "",           // server-generated
+                username: chosenUsername,
                 nickname: chosenNickname,
                 password: pw,
             });
