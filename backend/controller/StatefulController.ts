@@ -1,4 +1,4 @@
-import { IncomingMessage } from "connect";
+import { IncomingMessage } from "http";
 import { Duplex } from "stream";
 
 export class StatefulController{

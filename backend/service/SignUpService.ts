@@ -1,6 +1,6 @@
-import { IClientRepository } from "../repository/IClientRepositoy";
-import { ISignUpRequest } from "../requestFormat";
-import { ISignUpService } from "./ISignUpService";
+import { IClientRepository } from "../repository/IClientRepository.js";
+import { ISignUpRequest } from "../requestFormat.js";
+import { ISignUpService } from "./ISignUpService.js";
 
 export class SignUpService implements ISignUpService
 {

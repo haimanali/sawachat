@@ -1,5 +1,5 @@
-import { ILoginRequest } from "../requestFormat";
-import { ILoginResponse } from "../responseFormat";
+import { ILoginRequest } from "../requestFormat.js";
+import { ILoginResponse } from "../responseFormat.js";
 
 
 export interface ILoginService

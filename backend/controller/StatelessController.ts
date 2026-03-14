@@ -1,12 +1,11 @@
 import express, {Express, NextFunction, RequestHandler, Request, Response} from 'express'
-import { success, z } from 'zod'
+import { z } from 'zod'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import path from 'path'
-import { ILoginService } from '../service/ILoginService'
-import { ILoginRequest, ISignUpRequest, login_schema, signup_schema } from '../requestFormat'
-import { ISignUpService } from '../service/ISignUpService'
-import { REPLCommand } from 'repl'
+import { ILoginService } from '../service/ILoginService.js'
+import { ILoginRequest, ISignUpRequest, login_schema, signup_schema } from '../requestFormat.js'
+import { ISignUpService } from '../service/ISignUpService.js'
 
 
 export class StatelessController {
@@ -28,16 +27,16 @@ export class StatelessController {
         this.Ilogin_service = Ilogin_service;
         this.Isignup_service = Isignup_service;
         this.app = app;
-        this.app.use(express.static("frontend/public"));
         this.app.use(cors({
             origin : "localhost:3000",
-            methods : ["post", "get", "put", "delete"],
+            methods : ["POST", "GET", "PUT", "DELETE"],
         }));
 
         this.app.use(express.json());
         this.app.use(cookieParser());
 
         this.initRoutes();
+
         //error middleware
         this.app.use((error : Error, req : Request, res : Response, next : NextFunction) => {
 
@@ -106,7 +105,7 @@ export class StatelessController {
                 }
             }
 
-            res.sendFile(path.resolve("frontend/public/index.html"));
+            res.sendFile(path.resolve("frontend/private/index.html"));
         }));
 
         this.app.get("/@:username" , this.errorHandler(async (req : Request, res : Response) => {
@@ -132,11 +131,11 @@ export class StatelessController {
 
             if(site_pages.includes(target))
             {
-                res.sendFile(path.resolve(`frontend/public/${target}.html`));
+                res.sendFile(path.resolve(`frontend/private/${target}.html`));
             }
             else
             {
-                res.sendFile(path.resolve(`frontend/private/errro.html`));
+                res.sendFile(path.resolve(`frontend/private/error.html`));
             }
         }));
 

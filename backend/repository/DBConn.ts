@@ -1,6 +1,9 @@
 //sudo systemctl start mysql *start db on terminal*
+
+
+
 import mysql, { ResultSetHeader } from 'mysql2/promise'
-import { IDBQuery, IDBUpdate } from '../responseFormat';
+import { IDBQuery, IDBUpdate } from '../responseFormat.js';
 
 export class DBConn
 {

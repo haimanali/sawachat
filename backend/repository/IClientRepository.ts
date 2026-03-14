@@ -1,4 +1,4 @@
-import { IClient } from "../domain/IClient";
+import { IClient } from "../domain/IClient.js";
 
 
 export interface IClientRepository

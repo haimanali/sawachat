@@ -1,7 +1,7 @@
-import { ILoginResponse } from "../responseFormat";
-import { ILoginService } from "./ILoginService";
-import { IClientRepository } from '../repository/IClientRepositoy'
-import { ILoginRequest } from "../requestFormat";
+import { ILoginResponse } from "../responseFormat.js";
+import { ILoginService } from "./ILoginService.js";
+import { IClientRepository } from '../repository/IClientRepository.js'
+import { ILoginRequest } from "../requestFormat.js";
 import { v4 as genarateSessionID } from 'uuid';
 
 export class LoginService implements ILoginService{

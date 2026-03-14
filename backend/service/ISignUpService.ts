@@ -1,4 +1,4 @@
-import { ISignUpRequest } from "../requestFormat";
+import { ISignUpRequest } from "../requestFormat.js";
 
 export interface ISignUpService
 {
