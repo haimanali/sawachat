@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { apiCall } from "./apiCaller"; // Ensure the path is correct based on your folder structure
+import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:3000/api/signup";
 
@@ -20,6 +21,8 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [toastMsg, setToastMsg] = useState("");
+
+  const navigate = useNavigate();
 
   // ── Helpers ────────────────────────────────────────
   const showToast = (msg: string, ms = 2800) => {
@@ -46,8 +49,8 @@ export default function Signup() {
     if (nick.length < 2) {
       return showToast("❌ Nickname must be at least 2 characters");
     }
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(user)) {
-      return showToast("❌ Username must be 3-20 letters, numbers, or underscores");
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(user)) {
+      return showToast("❌ Username must be 3-16 letters, numbers, or underscores");
     }
 
     setTagline("Secure your account");
@@ -71,26 +74,21 @@ export default function Signup() {
     setErrorMsg("");
     setIsLoading(true);
 
-    try {
-      const result = await apiCall(API_URL, "POST", {
-        username: username.trim(),
-        nickname: nickname.trim(),
-        password: password,
-      });
+    const result = await apiCall(API_URL, "POST", {
+      username: username.trim(),
+      nickname: nickname.trim(),
+      password: password,
+    });
 
-      if (result.success) {
-        setTagline("You're all set! 🎉");
-        setStep("success");
-        // Optional: Redirect after a few seconds
-        setTimeout(() => {
-          window.location.href = `/@${result.username}`;
-        }, 2000);
-      } else {
-        setErrorMsg(result.message);
-      }
-    } catch (err) {
-      setErrorMsg("Could not connect to server. Please try again.");
-    } finally {
+    if (result.success) {
+      setTagline(`You're all set! 🎉 ${result.log_message}`);
+      setStep("success");
+      // Optional: Redirect after a few seconds
+      setTimeout(() => {
+        navigate(`/u/${result.username}`);
+      }, 2000);
+    } else {
+      showToast(result.log_message);
       setIsLoading(false);
     }
   };

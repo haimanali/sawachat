@@ -1,7 +1,27 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiCall } from './apiCaller';
+
+
+const ip = "http://localhost:3000/api/auth/session";
+
 
 export default function Index() {
+  const navigate = useNavigate();
+  
+useEffect(() => {
+    const checkSession = async () => {
+
+      const response = await apiCall(ip, 'GET');
+
+        if (response.success) {
+          navigate(`/u/${response.username}`);
+        }
+    };
+    checkSession();
+  }, []);
+
+
   return (
     <>
       {/* Background Orbs */}

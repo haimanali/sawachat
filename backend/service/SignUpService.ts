@@ -1,5 +1,6 @@
 import { IClientRepository } from "../repository/IClientRepository.js";
 import { ISignUpRequest } from "../requestFormat.js";
+import { ISignUpResponse } from "../responseFormat.js";
 import { ISignUpService } from "./ISignUpService.js";
 
 export class SignUpService implements ISignUpService
@@ -22,7 +23,14 @@ export class SignUpService implements ISignUpService
 
 
         //overrides
-        public async userSignUp(req_body: ISignUpRequest): Promise<void> {
+        public async userSignUp(req_body: ISignUpRequest): Promise<ISignUpResponse> {
+            const result = await this.Iclient_repo.checkClientExist(req_body.username);
+
+            if (result)
+                return { success : false, log_message : "User already exists, try loggging in.."};
+
+            
             await this.Iclient_repo.insertClientRecord(req_body.username, req_body.nickname, req_body.password);
+            return { success : true, log_message : "Account created successfully.."};
         }
 }

@@ -62,6 +62,17 @@ export class ClientRepository implements IClientRepository
         };
     }
 
+    public async checkClientExist(username : string) : Promise<boolean>
+    {
+        const sql = "select username from Client where username = ?";
+        const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
+
+        if (result.count > 0)
+            return true;
+
+        return false;
+    }
+
     public async checkClientInfo(username: string, password: string): Promise<IClient | null>{
         const sql = "select user_id, username, nickname, hash_pass from Client where username = ?";
 

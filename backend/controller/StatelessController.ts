@@ -1,11 +1,13 @@
 import express, {Express, NextFunction, RequestHandler, Request, Response} from 'express'
-import { z } from 'zod'
+import { success, z } from 'zod'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
-import path from 'path'
 import { ILoginService } from '../service/ILoginService.js'
 import { ILoginRequest, ISignUpRequest, login_schema, signup_schema } from '../requestFormat.js'
 import { ISignUpService } from '../service/ISignUpService.js'
+import { ILoginResponse } from '../responseFormat.js'
+import { tr } from 'zod/locales'
+import { log } from 'console'
 
 
 export class StatelessController {
@@ -28,7 +30,8 @@ export class StatelessController {
         this.Isignup_service = Isignup_service;
         this.app = app;
         this.app.use(cors({
-            origin : "localhost:3000",
+            origin : "http://localhost:5173",
+            credentials : true,
             methods : ["POST", "GET", "PUT", "DELETE"],
         }));
 
@@ -38,17 +41,14 @@ export class StatelessController {
         this.initRoutes();
 
         //error middleware
-        this.app.use((error : Error, req : Request, res : Response, next : NextFunction) => {
+        this.app.use((error : any, req : Request, res : Response, next : NextFunction) => {
 
             if (req.path.startsWith("/api/"))
             {
-                res.status(500).json( {success : false, message : error.message} );
+                const status = error.status || 500;
+                res.status(status).json( {success : false, message : error.message} );
+                console.log(error.message);
             }
-            else
-            {
-                res.status(500).sendFile(path.resolve("frontend/private/error.html"));
-            }
-
         });
     }
 
@@ -59,7 +59,9 @@ export class StatelessController {
 
             if (!result.success)
             {
-                next(new Error("failed to read json"));
+                const error = new Error("failed to read json");
+                (error as any).status = 400;
+                next(error);
             }
             else
             {
@@ -83,91 +85,81 @@ export class StatelessController {
         };
     }
 
+    private setCookie(res : Response, auto_login : boolean, session_id : string) : void
+    {
+        const cookie_options : any = {httponly : true} //add secure...
+
+        if (auto_login)
+        {
+            cookie_options.maxAge = (14 * 24 * 60 * 60 * 1000); // 14 days
+        }
+
+        res.cookie("session_id", session_id, cookie_options);       
+    }
+
 
     private initRoutes() : void 
     {
-        try {
+        this.app.get("/api/auth/session/check/:username", this.errorHandler(async (req : Request, res : Response) => {
 
-        } catch (error) {
+            const session_id = req.cookies.session_id;
+            if(!session_id)
+                {
+                    res.status(200).json( {success : false, log_message : "user doesn't have a session id"} );
+                    return;
+                }
+
+            const username = ( req.params.username as string ).trim() ;
+            const payload : ILoginResponse = await this.Ilogin_service.verifySession(session_id, username); 
+
+            res.status(200).json( payload );
+        }));
+
+        this.app.get("/api/auth/session", this.errorHandler(async (req : Request, res : Response) => {
+
+            const session_id = req.cookies.session_id;
+            if(!session_id)
+                return;
+                        
+            const payload : ILoginResponse = await this.Ilogin_service.verifySession(session_id);
+
+            res.status(200).json( payload );
             
-        }
-        this.app.get("/", this.errorHandler(async (req : Request, res : Response) => {
-
-            const session_id = req.cookies.session_id;
-
-            if (session_id)
-            {
-                const result = await this.Ilogin_service.verifySession(session_id);
-                if (result.success)
-                {
-                    res.redirect(`/${result.username}`);
-                    return;
-                }
-            }
-
-            res.sendFile(path.resolve("frontend/private/index.html"));
         }));
 
-        this.app.get("/@:username" , this.errorHandler(async (req : Request, res : Response) => {
-
-            const username = ((req.params.username) as string).trim();
-            const session_id = req.cookies.session_id;
-            if(session_id)
-            {
-                const result = await this.Ilogin_service.verifySession(session_id, username)
-                if(result.success)
-                {
-                    res.sendFile(path.resolve("frontend/private/home.html"));
-                    return;
-                }
-            }
-            res.redirect("/login");
-
-        }));
-
-        this.app.get("/:page", this.errorHandler(async (req : Request, res : Response) => {
-            const target = ((req.params.page) as string).trim();
-            const site_pages = ["login", "signup"];
-
-            if(site_pages.includes(target))
-            {
-                res.sendFile(path.resolve(`frontend/private/${target}.html`));
-            }
-            else
-            {
-                res.sendFile(path.resolve(`frontend/private/error.html`));
-            }
-        }));
 
         this.app.post("/api/login", this.validateJSON(login_schema), this.errorHandler(async (req : Request, res : Response) => {
 
                 const payload = await this.Ilogin_service.userLogin(req.body);
-                const cookie_options : any = {httponly : true} //add secure...
 
-                if (req.body.auto_login)
+                if (payload.success)
                 {
-                    cookie_options.maxAge = (14 * 24 * 60 * 60 * 1000); // 14 days
+                    this.setCookie(res, req.body.auto_login, payload.session_id!);
                 }
 
-                res.cookie("session_id", payload.session_id, cookie_options);
-                res.json( payload );
-
+                res.status(200).json( payload );
         }));
 
         this.app.post("/api/signup", this.validateJSON(signup_schema), this.errorHandler(async (req : Request, res : Response) => {
 
             const req_body : ISignUpRequest = req.body;
-
-            await this.Isignup_service.userSignUp(req_body);
+            const result =  await this.Isignup_service.userSignUp(req_body);
+            if (!result.success)
+            {
+                res.status(200).json( result );
+                return;
+            }
             const payload = 
             await this.Ilogin_service.userLogin(
                 {auto_login : true, username : req_body.username, password : req_body.password} as ILoginRequest
             );
 
-            if (!payload.success)
-                res.status(400).json( {success : false, message : "fatal error"} );
+            if (payload.success)
+            {
+                this.setCookie(res, true, payload.session_id!);
+            }
 
-            res.json( payload );
+            res.status(200).json( payload );
         }));
 
     }

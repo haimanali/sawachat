@@ -1,10 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Signup from "./signup";
+import Signup from "./signup"
 import Login from "./login";
-import Index from "./index";
-import Error from "./error";
+import Index from "./index"
+import Error from "./error"
+import Home from "./home"
 import "./assets/style.css"
 
 
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/u/:username" element={<Home />} />
 
         <Route path="*" element={<Error />} />
       </Routes>

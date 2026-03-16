@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiCall } from "./apiCaller"; // Ensure the path is correct
+import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:3000/api/login";
 
@@ -16,6 +17,8 @@ export default function Login() {
   const [toastMsg, setToastMsg] = useState("");
   const [greeting, setGreeting] = useState("Welcome Back! 👋");
   const [isShaking, setIsShaking] = useState(false);
+
+  const navigate = useNavigate();
 
   // ── Initialization (Runs once when page loads) ───────
   useEffect(() => {
@@ -52,30 +55,24 @@ export default function Login() {
     setErrorMsg("");
     setIsLoading(true);
 
-    try {
-      const result = await apiCall(API_URL, "POST", {
-        auto_login: autoLogin,
-        username: cleanUsername,
-        password: password,
-      });
+    const result = await apiCall(API_URL, "POST", {
+      auto_login: autoLogin,
+      username: cleanUsername,
+      password: password,
+    });
 
-      if (result.success) {
-        showToast(`✅ Welcome back, ${result.nickname}!`);
-        // Redirect to chat after short delay
-        setTimeout(() => {
-          window.location.href = `/@${result.username}`;
-        }, 1000);
-      } else {
-        setErrorMsg("Invalid User ID or password.");
-        triggerShake();
-      }
-    } catch (err) {
-      // Network / server error
-      setErrorMsg("Could not connect to server. Please try again.");
-      triggerShake();
-    } finally {
+    if (result.success) {
+      showToast(`✅ Welcome back, ${result.nickname}!`);
+      // Redirect to chat after short delay
+      setTimeout(() => {
+        navigate(`/u/${result.username}`);
+      }, 1000);
+    } else {
+      showToast(result.log_message);
       setIsLoading(false);
+      triggerShake();
     }
+
   };
 
   // ── Render (HTML/JSX) ──────────────────────────────

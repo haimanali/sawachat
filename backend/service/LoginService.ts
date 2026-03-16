@@ -28,19 +28,20 @@ export class LoginService implements ILoginService{
 
         if(!client)
         {
-            return {success : false};
+            return {success : false , log_message : "user doesn't exists, please SignUp.."};
         }
 
         if (username && client.username != username)
         {
-            return {success : false};
+            return {success : false, log_message : "username doesn't match session id"};
         }
 
         return{
             success : true,
             username : client.username,
             nickname : client.nickname,           
-            session_id : session_id
+            session_id : session_id,
+            log_message : "Account found, user logged in..",
         };
     }
 
@@ -51,6 +52,7 @@ export class LoginService implements ILoginService{
         if(!client)
             return {
                 success : false,
+                log_message : "user doesn't exists, please SignUp..",
             };
 
         const session_id = genarateSessionID();
@@ -66,7 +68,8 @@ export class LoginService implements ILoginService{
             success : true,
             username : client.username,
             nickname : client.nickname,
-            session_id : session_id
+            session_id : session_id,
+            log_message : "Account found, user logged in..",
         };        
         
     }

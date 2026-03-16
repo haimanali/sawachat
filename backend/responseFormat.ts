@@ -4,6 +4,13 @@ export interface ILoginResponse
     username? : string,
     nickname? : string,    
     session_id? : string,
+    log_message : string,
+}
+
+export interface ISignUpResponse
+{
+    success : boolean,
+    log_message : string,
 }
 
 export interface IDBUpdate
