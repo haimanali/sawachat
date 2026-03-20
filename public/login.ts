@@ -57,7 +57,7 @@ loginForm?.addEventListener("submit", async (e: Event) => {
     const auto_login = (document.getElementById("auto-login") as HTMLInputElement).checked;
 
     // Basic client-side validation
-    if (!username) { toast("❌ Please enter your User ID"); return; }
+    if (!username) { toast("❌ Please enter your Username"); return; }
     if (!password) { toast("❌ Please enter your password"); return; }
 
     // Hide previous error, show loading
@@ -76,9 +76,9 @@ loginForm?.addEventListener("submit", async (e: Event) => {
 
             toast(`✅ Welcome back, ${result.client.nickname}!`);
             // Redirect to chat after short delay
-            setTimeout(() => { window.location.href = "/chat"; }, 1000);
+            setTimeout(() => { window.location.href = "chat.html"; }, 1000);
         } else {
-            errorText.textContent = "Invalid User ID or password.";
+            errorText.textContent = "Invalid Username or password.";
             errorEl.classList.remove("hidden");
             shakeForm();
         }
