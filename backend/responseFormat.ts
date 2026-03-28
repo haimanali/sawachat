@@ -1,16 +1,30 @@
-export interface ILoginResponse
+export interface IPayloadInterface<T = void>
 {
     success : boolean,
-    username? : string,
-    nickname? : string,    
-    session_id? : string,
     log_message : string,
+    data? : T,
 }
 
-export interface ISignUpResponse
+export interface IAppLayerResponse<T = void, K = void>
 {
     success : boolean,
     log_message : string,
+    data? : T,
+    internal? : K,
+}
+
+export interface IServiceLayerResponse<T = void>
+{
+    success : boolean,
+    log_message : string,
+    data? : T,
+}
+
+export interface IRepositoryLayerResponse<T = void>
+{
+    success : boolean,
+    log_message : string,
+    data? : T,
 }
 
 export interface IDBUpdate

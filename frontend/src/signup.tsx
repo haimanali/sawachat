@@ -46,8 +46,8 @@ export default function Signup() {
     const nick = nickname.trim();
     const user = username.trim();
 
-    if (nick.length < 2) {
-      return showToast("❌ Nickname must be at least 2 characters");
+    if (nick.length < 2 || nick.length > 8) {
+      return showToast("❌ Nickname must be 2-8 characters long");
     }
     if (!/^[A-Za-z0-9_]{3,16}$/.test(user)) {
       return showToast("❌ Username must be 3-16 letters, numbers, or underscores");
@@ -154,7 +154,7 @@ export default function Signup() {
                       required
                     />
                   </div>
-                  <p className="input-hint">3–20 letters, numbers, or underscores. Cannot be changed later.</p>
+                  <p className="input-hint">3–16 letters, numbers, or underscores. Cannot be changed later.</p>
                 </div>
 
                 <div className="input-group">

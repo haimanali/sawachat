@@ -1,7 +1,6 @@
-export interface IClientRecord
+import { IClient } from "../domain/IClient.js";
+
+export interface IClientRecord extends IClient
 {
-    readonly user_id : number,
-    readonly username : string,
-    readonly nickname : string,
     readonly hash_pass : string,
 }

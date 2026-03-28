@@ -120,7 +120,7 @@ export default function Login() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="your_username"
-                    autoComplete="username"
+                    autoComplete="off"
                     autoCapitalize="none"
                     spellCheck="false"
                     required

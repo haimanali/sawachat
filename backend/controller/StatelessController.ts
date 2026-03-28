@@ -2,33 +2,28 @@ import express, {Express, NextFunction, RequestHandler, Request, Response} from 
 import { success, z } from 'zod'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
-import { ILoginService } from '../service/ILoginService.js'
 import { ILoginRequest, ISignUpRequest, login_schema, signup_schema } from '../requestFormat.js'
-import { ISignUpService } from '../service/ISignUpService.js'
-import { ILoginResponse } from '../responseFormat.js'
-import { tr } from 'zod/locales'
-import { log } from 'console'
-
+import { DBConn } from "../repository/DBConn.js";
+import { IApiApplication } from '../Application/IApiApplication.js'
 
 export class StatelessController {
 
-    public static getInstance(app : Express, Ilogin_service : ILoginService, Isignup_service : ISignUpService) : StatelessController {
+    public static getInstance(app : express.Express,  Iapp_layer : IApiApplication) : StatelessController {
         if (StatelessController.instance) 
             return StatelessController.instance;
 
-        StatelessController.instance = new StatelessController(app, Ilogin_service, Isignup_service);
+        StatelessController.instance = new StatelessController(app, Iapp_layer);
         return StatelessController.instance;
     }
 
     private static instance : StatelessController;
-    private Ilogin_service : ILoginService;
-    private Isignup_service : ISignUpService;
+    private Iapp_layer : IApiApplication;
     private app : Express;
-    private constructor (app : Express, Ilogin_service : ILoginService, Isignup_service : ISignUpService)
+    private constructor (app : express.Express,  Iapp_layer : IApiApplication)
     {
-        this.Ilogin_service = Ilogin_service;
-        this.Isignup_service = Isignup_service;
+        this.Iapp_layer = Iapp_layer;
         this.app = app;
+
         this.app.use(cors({
             origin : "http://localhost:5173",
             credentials : true,
@@ -46,12 +41,47 @@ export class StatelessController {
             if (req.path.startsWith("/api/"))
             {
                 const status = error.status || 500;
-                res.status(status).json( {success : false, message : error.message} );
+                res.status(status).json( {success : false, message : "Server down"} );
                 console.log(error.message);
             }
         });
     }
 
+    
+    private async transactionHandler(handleData : () => Promise<void>) : Promise<void>
+    {
+        const conn = await DBConn.beginTransaction()
+        try 
+        {
+            DBConn.runTransaction(conn, async () => {
+                await handleData();
+            });
+            await conn.commit();
+        } 
+        catch (error) 
+        {
+            await conn.rollback();
+            throw Error("something went wrong, please try again later...");
+        }
+        finally
+        {
+            conn.release();
+        }
+    }
+    
+    private errorHandler(fn : Function) {
+        return async (req : Request, res : Response, next : NextFunction) => {
+            try
+            {
+                await this.transactionHandler( async () => await fn(req, res) );
+            } 
+            catch(error)
+            {
+                next(error);
+            }
+        };
+    }
+    
     private validateJSON(schema : z.ZodSchema) : RequestHandler
     {
         return (req : Request, res : Response, next : NextFunction) => {
@@ -71,20 +101,7 @@ export class StatelessController {
 
         };
     }
-
-    private errorHandler(fn : Function) {
-        return async (req : Request, res : Response, next : NextFunction) => {
-            try
-            {
-                await fn(req, res);
-            } 
-            catch(error)
-            {
-                next(error);
-            }
-        };
-    }
-
+    
     private setCookie(res : Response, auto_login : boolean, session_id : string) : void
     {
         const cookie_options : any = {httponly : true} //add secure...
@@ -109,10 +126,13 @@ export class StatelessController {
                     return;
                 }
 
-            const username = ( req.params.username as string ).trim() ;
-            const payload : ILoginResponse = await this.Ilogin_service.verifySession(session_id, username); 
+            const payload = await this.Iapp_layer.authenticateByUsername(req.params.username as string);
 
-            res.status(200).json( payload );
+            res.status(200).json( {
+                success : payload.success,
+                data : payload.data,
+                log_message : payload.log_message,
+            } );
         }));
 
         this.app.get("/api/auth/session", this.errorHandler(async (req : Request, res : Response) => {
@@ -121,45 +141,48 @@ export class StatelessController {
             if(!session_id)
                 return;
                         
-            const payload : ILoginResponse = await this.Ilogin_service.verifySession(session_id);
-
-            res.status(200).json( payload );
+            const payload = await this.Iapp_layer.authenticateBySessionID(session_id);
+            res.status(200).json( {
+                success : payload.success,
+                data : payload.data,
+                log_message : payload.log_message,
+            } );
             
         }));
 
-
         this.app.post("/api/login", this.validateJSON(login_schema), this.errorHandler(async (req : Request, res : Response) => {
 
-                const payload = await this.Ilogin_service.userLogin(req.body);
+                const req_body : ILoginRequest = req.body;
+                const payload = await this.Iapp_layer.loginUser(req_body);
 
                 if (payload.success)
                 {
-                    this.setCookie(res, req.body.auto_login, payload.session_id!);
+                    this.setCookie(res, req.body.auto_login, payload.internal!.session_id);
                 }
 
-                res.status(200).json( payload );
+                res.status(200).json( {
+                    success : payload.success,
+                    data : payload.data,
+                    log_message : payload.log_message,
+                } );
         }));
 
         this.app.post("/api/signup", this.validateJSON(signup_schema), this.errorHandler(async (req : Request, res : Response) => {
 
             const req_body : ISignUpRequest = req.body;
-            const result =  await this.Isignup_service.userSignUp(req_body);
-            if (!result.success)
-            {
-                res.status(200).json( result );
-                return;
-            }
-            const payload = 
-            await this.Ilogin_service.userLogin(
-                {auto_login : true, username : req_body.username, password : req_body.password} as ILoginRequest
-            );
+            const payload = await this.Iapp_layer.registerUser(req_body);
 
             if (payload.success)
             {
-                this.setCookie(res, true, payload.session_id!);
+                this.setCookie(res, true, payload.internal!.session_id!);
             }
 
-            res.status(200).json( payload );
+            res.status(200).json( {
+                success : payload.success,
+                data : payload.data,
+                log_message : payload.log_message,
+            } );
+            
         }));
 
     }
