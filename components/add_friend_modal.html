@@ -1,0 +1,33 @@
+<div class="modal-overlay" id="add-friend-modal" aria-hidden="true">
+    <div class="modal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 data-i18n="add_friend_title" style="font-size: 1.5rem; font-weight: 700;">Add a Friend</h2>
+            <button class="icon-btn" id="close-add-friend" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+        </div>
+
+        <p data-i18n="add_friend_sub" style="color: var(--text-sub); margin-bottom: 24px; font-size: 0.95rem;">
+            Enter a user's exact username to send them a secure friend request.
+        </p>
+
+        <form id="add-friend-form">
+            <div class="input-group" style="margin-bottom: 24px;">
+                <label data-i18n="friend_username" for="friend-username">Friend's Username</label>
+                <div class="input-wrapper">
+                    <span class="input-prefix">@</span>
+                    <input type="text" id="friend-username" placeholder="username" autocomplete="off" required>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary" style="padding: 10px 24px;">
+                    <span data-i18n="send_request">Send Friend Request</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

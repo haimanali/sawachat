@@ -4,6 +4,30 @@
 
 import { apiCall } from "./apiCaller.js";
 
+/* ── Dynamic Component Loader ────────────────────── */
+const modalsContainer = document.getElementById("modals-container") as HTMLElement;
+
+async function loadModals() {
+    const components = [
+        "components/settings_modal.html",
+        "components/edit_profile_modal.html",
+        "components/add_friend_modal.html"
+    ];
+
+    for (const file of components) {
+        try {
+            const res = await fetch(file);
+            const html = await res.text();
+            modalsContainer.insertAdjacentHTML('beforeend', html);
+        } catch (e) {
+            console.error("Failed to load component: " + file, e);
+        }
+    }
+}
+
+// Block execution until HTML components are injected
+await loadModals();
+
 /* ── DOM Elements ─────────────────────────────────── */
 const chatList = document.getElementById("chat-list") as HTMLElement;
 

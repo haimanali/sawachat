@@ -1,0 +1,83 @@
+<div class="modal-overlay" id="settings-modal" aria-hidden="true">
+    <div class="modal" style="width: 440px; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 data-i18n="settings_title" style="font-size: 1.5rem; font-weight: 700;">Settings</h2>
+            <button class="icon-btn" id="close-settings" aria-label="Close Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Profile Overview -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button id="edit-avatar-btn" style="border: none; background: transparent; cursor: pointer; position: relative; border-radius: 50%;">
+                    <div class="chat-avatar" id="settings-avatar" style="width: 56px; height: 56px; font-size: 1.5rem;">S</div>
+                    <div style="position: absolute; bottom: 0; right: -4px; background: var(--surface); border-radius: 50%; padding: 4px; box-shadow: var(--shadow);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width: 14px; height: 14px;">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                </button>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3 id="settings-name" style="font-size: 1.1rem; margin-bottom: 4px;">User</h3>
+                        <button id="edit-name-btn" class="icon-btn" style="width: 24px; height: 24px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="settings-username" style="color: var(--text-sub); font-size: 0.9rem;">@username</p>
+                </div>
+            </div>
+        </div>
+
+        <h3 data-i18n="cat_general" style="font-size: 0.9rem; color: var(--primary); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
+            General</h3>
+        <div class="setting-row">
+            <div>
+                <strong data-i18n="dark_mode">Dark Mode</strong>
+                <p data-i18n="dark_mode_sub" style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">
+                    Switch to dark theme UI</p>
+            </div>
+            <div class="toggle-switch" id="theme-toggle" role="switch" aria-checked="false"></div>
+        </div>
+
+        <div class="setting-row">
+            <div>
+                <strong data-i18n="language">Language</strong>
+                <p data-i18n="language_sub" style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">
+                    Choose your preferred app language</p>
+            </div>
+            <select id="language-select" style="padding: 8px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; outline: none;">
+                <option value="en">English</option>
+                <option value="ar">العربية (Arabic)</option>
+            </select>
+        </div>
+
+        <h3 data-i18n="cat_chat" style="font-size: 0.9rem; color: var(--primary); margin-bottom: 16px; margin-top: 32px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Chat Settings</h3>
+        <div class="setting-row">
+            <div>
+                <strong data-i18n="notifications">Desktop Notifications</strong>
+                <p data-i18n="notif_sub" style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">Get alerts for new messages</p>
+            </div>
+            <div class="toggle-switch active" id="notif-toggle" role="switch" aria-checked="true"></div>
+        </div>
+
+        <h3 data-i18n="cat_privacy" style="font-size: 0.9rem; color: var(--primary); margin-bottom: 16px; margin-top: 32px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Privacy</h3>
+        <div class="setting-row" style="border-bottom: none;">
+            <div>
+                <strong data-i18n="read_receipts">Read Receipts</strong>
+                <p data-i18n="receipts_sub" style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">Let others see when you've read messages</p>
+            </div>
+            <div class="toggle-switch active" id="receipts-toggle" role="switch" aria-checked="true"></div>
+        </div>
+    </div>
+</div>

@@ -17,9 +17,7 @@
 <body>
 
     <div class="bg-layer" aria-hidden="true">
-        <div class="bg-orb orb-1"></div>
-        <div class="bg-orb orb-2"></div>
-        <div class="bg-orb orb-3"></div>
+        <div class="bg-glow" id="mouse-glow"></div>
     </div>
 
     <div class="page-wrapper">
@@ -102,6 +100,20 @@
 
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
+    <script>
+        // Directly animate the glow element using precise pixel coordinates
+        const glow = document.getElementById('mouse-glow');
+        if (glow) {
+            document.addEventListener("mousemove", (e) => {
+                // Use requestAnimationFrame natively via CSS transforms for 60fps
+                glow.style.left = e.clientX + 'px';
+                glow.style.top = e.clientY + 'px';
+            });
+            // Initial center fallback
+            glow.style.left = (window.innerWidth / 2) + 'px';
+            glow.style.top = (window.innerHeight / 2) + 'px';
+        }
+    </script>
 </body>
 
 </html>

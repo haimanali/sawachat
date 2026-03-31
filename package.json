@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "script.js",
   "scripts": {
+    "dev": "concurrently \"tsc --watch\" \"python -m http.server 5500\"",
     "build": "tsc",
     "watch": "tsc --watch"
   },
@@ -19,6 +20,7 @@
   "homepage": "https://github.com/petrosoudah/sawachat#readme",
   "description": "",
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "typescript": "^5.9.3"
   }
 }
