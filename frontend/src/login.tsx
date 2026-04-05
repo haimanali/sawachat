@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { apiCall } from "./apiCaller"; // Ensure the path is correct
+import { apiCall } from "./assets/apiCaller"; // Ensure the path is correct
 import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:3000/api/login";
@@ -65,7 +65,7 @@ export default function Login() {
       showToast(`✅ Welcome back, ${result.nickname}!`);
       // Redirect to chat after short delay
       setTimeout(() => {
-        navigate(`/u/${result.username}`);
+        navigate(`/u/${result.data.username}`);
       }, 1000);
     } else {
       showToast(result.log_message);

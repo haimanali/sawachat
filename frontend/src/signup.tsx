@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { apiCall } from "./apiCaller"; // Ensure the path is correct based on your folder structure
+import { apiCall } from "./assets/apiCaller"; // Ensure the path is correct based on your folder structure
 import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:3000/api/signup";
@@ -85,7 +85,7 @@ export default function Signup() {
       setStep("success");
       // Optional: Redirect after a few seconds
       setTimeout(() => {
-        navigate(`/u/${result.username}`);
+        navigate(`/u/${result.data.username}`);
       }, 2000);
     } else {
       showToast(result.log_message);
@@ -226,10 +226,16 @@ export default function Signup() {
                     <input
                       type={showPassword ? "text" : "password"}
                       id="reg-password"
+                      draggable = "false"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Min. 8 characters"
-                      autoComplete="new-password"
+                      autoComplete="off"
+                      onCopy={ (e) => {e.preventDefault()} }
+                      onCut= { (e) => {e.preventDefault()} }
+                      onPaste= { (e) => {e.preventDefault()} }
+                      onDrag= { (e) => {e.preventDefault()} }
+                      onDrop= { (e) => {e.preventDefault()} }
                       required
                     />
                     <button
@@ -272,10 +278,16 @@ export default function Signup() {
                     <input
                       type={showConfirm ? "text" : "password"}
                       id="reg-confirm"
+                      draggable = "false"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repeat your password"
-                      autoComplete="new-password"
+                      autoComplete="off"
+                      onCopy={ (e) => {e.preventDefault()} }
+                      onCut= { (e) => {e.preventDefault()} }
+                      onPaste= { (e) => {e.preventDefault()} }
+                      onDrag= { (e) => {e.preventDefault()} }
+                      onDrop= { (e) => {e.preventDefault()} }
                       required
                     />
                     <button

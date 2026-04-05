@@ -14,12 +14,13 @@ export interface IApiApplication
     authenticateByUsername(username : string) : Promise<IAppLayerResponse<IClientPublic>>;
     loginUser(req_body: ILoginRequest) : Promise<IAppLayerResponse<IClientPublic, { session_id : string }>>,
     registerUser(req_body: ISignUpRequest) : Promise<IAppLayerResponse<IClientPublic, { session_id : string }>>,
-   
-    sendContactRequest(r_username : string, s_user_id : number) : Promise<IAppLayerResponse<IRequestPublic, IClient>>
-    acceptContactRequest(username : string, request_verdict : boolean, r_client : IClient) : Promise<IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room? : IRoom}>>;
+    logoutUser(session_id : string) : Promise<IAppLayerResponse>,
+
+    sendContactRequest(r_username : string, s_client : IClient) : Promise<IAppLayerResponse<IRequestPublic, IClient>>
+    acceptContactRequest(username : string, request_verdict : boolean, r_client : IClient) : Promise<IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room : IRoom}>>;
     sendMessage(room_public_id : string, content : string, s_client : IClient) : Promise<IAppLayerResponse<IMessagePublic, { room_id : number }>>;
     
-    fetchUserRequests(client : IClient, offset : number) : Promise<IAppLayerResponse<IRequestPublic []>>;
-    fetchUserRooms(client : IClient, offset : number) : Promise<IAppLayerResponse<IRoomPublic []>>;
-    fetchUserMessages(room_public_id : string, offset: number) : Promise<IAppLayerResponse<IMessagePublic []>>;
+    fetchUserRequests(client : IClient, cursor : Date | null) : Promise<IAppLayerResponse<IRequestPublic []>>;
+    fetchUserRooms(client : IClient, cursor : Date | null) : Promise<IAppLayerResponse<IRoomPublic []>>;
+    fetchUserMessages(room_public_id : string, cursor : Date | null) : Promise<IAppLayerResponse<IMessagePublic []>>;
 }

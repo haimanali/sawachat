@@ -7,5 +7,5 @@ export interface IContactService
     performVerdictRequest(verdict : boolean, s_username : number, r_user_id : number) : Promise<IServiceLayerResponse>;
     performAddContact(s_user_id: number, r_user_id : number) : Promise<IServiceLayerResponse>;
 
-    performLoadRequests(user_id: number, offset : number) : Promise<IServiceLayerResponse<IRequest []>>;
+    performLoadRequests(user_id: number,  cursor : Date | null) : Promise<IServiceLayerResponse<IRequest []>>;
 }

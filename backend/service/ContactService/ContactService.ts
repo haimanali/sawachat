@@ -2,6 +2,7 @@ import { Repository } from "../../componantParams.js";
 import { IRequest } from "../../domain/IRequest.js";
 import { IServiceLayerResponse } from "../../responseFormat.js";
 import { IContactService } from "./IContactService.js";
+import { v4 as generateRequestPublicID } from "uuid";
 
 
 export class ContactService implements IContactService
@@ -29,15 +30,17 @@ export class ContactService implements IContactService
     public async performSendRequest(r_user_id: number, s_user_id : number): Promise<IServiceLayerResponse<IRequest>> 
     {
         const is_pending = await this.repository.Icontact_repo.isRequestPending(r_user_id, s_user_id);
-        if (is_pending)
+
+        if (is_pending.data)
             return {
                 success : false,
                 log_message : "Request has already been sent",
             };
-
-        const c_result = await this.repository.Icontact_repo.insertContactRequest(r_user_id, s_user_id);
+            
+        const c_result = await this.repository.Icontact_repo.insertContactRequest(generateRequestPublicID(), r_user_id, s_user_id);
+        
         return {
-            success : true, 
+            success : c_result.success, 
             data : c_result.data,
             log_message : "request was sent",
         };
@@ -61,8 +64,8 @@ export class ContactService implements IContactService
         return {success : true, log_message : "new contact has been added.."};
     }
 
-    public async performLoadRequests(user_id: number, offset : number): Promise<IServiceLayerResponse<IRequest []>> {
-        const c_result = await this.repository.Icontact_repo.getRequestsByUserID(user_id, offset);
+    public async performLoadRequests(user_id: number, cursor : Date | null): Promise<IServiceLayerResponse<IRequest []>> {
+        const c_result = await this.repository.Icontact_repo.getRequestsByUserID(user_id, cursor);
 
         return {success : true, data : c_result.data, log_message : "fetched requests by user id"};
     }

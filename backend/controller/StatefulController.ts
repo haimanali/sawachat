@@ -31,7 +31,7 @@ export class StatefulController{
         this.active_clients.get(r_user_id)?.forEach( (other_wsSession) => {
             if (other_wsSession === init_wsSession) return;
 
-            other_wsSession?.write(`on${type}`, payload);;
+            other_wsSession?.write(type, payload);;
         });
     }
 
@@ -40,7 +40,7 @@ export class StatefulController{
         this.active_clients.get(s_user_id)?.forEach( (other_wsSession) => {
             if (other_wsSession === init_wsSession) return;
 
-            other_wsSession?.write(`on${type}`, payload);;
+            other_wsSession?.write(type, payload);;
         });    
     }
 
@@ -50,7 +50,7 @@ export class StatefulController{
 
             this.active_clients.get(user_id)?.forEach( (other_wsSession) => {
                 if (other_wsSession === init_wsSession) return;
-                other_wsSession?.write(`on${type}`, payload);
+                other_wsSession?.write(type, payload);
             });
 
         });
@@ -72,16 +72,7 @@ export class StatefulController{
     public errorHandler(wsSession : wsSession, fn : Function) 
     {
         return async () => {
-            try
-            {
-                await this.transactionHandler( async () => await fn()) ;
-
-            }
-            catch(error : any)
-            {
-                console.log(error.message);
-                wsSession.write("onerror", { log_message :  "Server down"});
-            }
+            await this.transactionHandler(wsSession ,async () => await fn()) ;
         };
     }
 
@@ -115,6 +106,7 @@ export class StatefulController{
             cors : {
                 origin : "http://localhost:5173",
                 credentials : true,
+                methods : ["POST", "GET", "PUT", "DELETE"],
             }
         });
 
@@ -123,7 +115,7 @@ export class StatefulController{
             const header_cookie : string | undefined = soc.handshake.headers.cookie;
 
             if (!header_cookie)
-               return next(new Error("Auth failed"));
+                return next(new Error("Auth failed"));
 
             const parse_cookie = cookie.parse(header_cookie);
             const session_id = parse_cookie.session_id;
@@ -131,9 +123,9 @@ export class StatefulController{
             if (!session_id)
                return next(new Error("Auth failed"));
 
-            const client = (await this.Iapp_layer.authenticateBySessionID(session_id)).internal;
-            (soc as any).client = client;
-            
+            const client : IClient = (await this.Iapp_layer.authenticateBySessionID(session_id)).internal!;
+
+            soc.data.client = client;
             next();
         });
         
@@ -141,7 +133,7 @@ export class StatefulController{
         this.asyncAcceptor();
     }
 
-    private async transactionHandler( fn : () => Promise<void> ) : Promise<void>  
+    private async transactionHandler(wsSession : wsSession, fn : () => Promise<void> ) : Promise<void>  
     {
         const conn = await DBConn.beginTransaction(); 
         try 
@@ -151,9 +143,11 @@ export class StatefulController{
             });
             await conn.commit();
         } 
-        catch (error) 
+        catch (error : any) 
         {
             await conn.rollback();
+            console.log(error.message);
+            wsSession.write("onerror", { log_message :  "Server down"});
         }
         finally
         {
@@ -165,7 +159,7 @@ export class StatefulController{
     {
         this.io_server.on("connection", (soc) => {
 
-            const client : IClient = (soc as any).client;
+            const client : IClient = soc.data.client;
             const ws_session = new wsSession(soc ,StatefulController.instance ,this.Iapp_layer ,client);
             
             if (!this.active_clients.has(client.user_id))

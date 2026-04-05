@@ -1,3 +1,19 @@
+export enum IPayloadResponseType
+{
+    ONSEND_MESSAGE = "onsend_message",
+    ONRECEIVE_MESSAGE = "onreceive_message",
+
+    ONVERDICT_REQUEST = "onverdict_request_create_room",
+    ONCREATE_CONTACT = "oncreate_contact",
+
+    ONSEND_REQUEST = "onsend_request",
+    ONRECEIVE_REQUEST = "onreceive_request",
+
+    ONLOAD_MESSAGES = "onload_messages",
+    ONLOAD_REQUESTS = "onload_requests",
+    ONLOAD_ROOMS = "onload_rooms",
+}
+
 export interface IPayloadInterface<T = void>
 {
     success : boolean,
@@ -38,3 +54,5 @@ export interface IDBQuery<T>
     data : T[],
     count : number
 }
+
+

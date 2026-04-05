@@ -110,7 +110,7 @@ export class ClientRepository implements IClientRepository
 
     public async checkClientExist(username : string) : Promise<IRepositoryLayerResponse<IClient>>
     {
-        const sql = "select (user_id, username, nickname) from Client where username = ?";
+        const sql = "select user_id, username, nickname from Client where username = ?";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
 
         if (result.count <= 0)
@@ -134,8 +134,20 @@ export class ClientRepository implements IClientRepository
         } ;
     }
 
+    public async removeClientSession(session_id : string): Promise<IRepositoryLayerResponse> 
+    {
+        const sql = "delete from Session where session_id = UUID_TO_BIN(?)";
+        const result = await this.db_conn.executeUpdate(sql, [session_id]);
 
-    public async insertClientRecord(username: string, nickname: string, password: string): Promise<IRepositoryLayerResponse> {
+
+        return {
+            success : true,
+            log_message : "user logged out successfully..",
+        };
+    }
+
+
+    public async insertClientRecord(username: string, nickname: string, password: string): Promise<IRepositoryLayerResponse<IClient>> {
         const sql = "insert into Client (username, nickname, hash_pass) values (?, ?, ?)";
 
         const hash_pass = await this.hashPassword(password);
@@ -144,10 +156,29 @@ export class ClientRepository implements IClientRepository
         if (result.affectedRows === 0)  
             throw Error("something went wrong, please try again later.");
 
+        const client = await this.getClientByUserID(result.insertId);
+        
         return {
             success : true,
+            data : client,
             log_message : "client record was inserted",
         };
+    }
+
+
+    private async getClientByUserID(user_id: number) : Promise<IClient>{
+        const sql = "select * from Client where user_id = ?";
+        const result = await this.db_conn.executeQuery<IClientRecord>(sql, [user_id]);
+
+        const [data] = result.data;
+
+        const client : IClient =  {
+            user_id : data.user_id,
+            username : data.username,
+            nickname : data.nickname, 
+        };
+
+        return client;
     }
 
 

@@ -25,7 +25,7 @@ export class ContactRepositiry implements IContactRepository
 
     private async getRequestByID(request_id : number) : Promise<IRequest>
     {
-        const sql = "select (r.request_id, r.public_id, c.username, c.nickname, r.created_at) from Request r join Client c on r.sender_id = c.user_id where r.request_id = ?";
+        const sql = "select request_id, BIN_TO_UUID(public_id) as public_id, sender_id, receiver_id, status, created_at from Request r join Client c on r.sender_id = c.user_id where r.request_id = ?";
         const result = await this.db_conn.executeQuery<IRequest>(sql, [request_id]);
 
         const request : IRequest = result.data[0] as IRequest;
@@ -35,8 +35,8 @@ export class ContactRepositiry implements IContactRepository
     //overrides
 
     public async isRequestPending(r_user_id: number, s_user_id: number): Promise<IRepositoryLayerResponse<boolean>> {
-        const sql = "select * from Request where sender_id = ? and receiver_id = ? and status = 'pending'";
-        const result = await this.db_conn.executeQuery<IRequestRecord>(sql, [s_user_id, r_user_id]);
+        const sql = "select request_id, BIN_TO_UUID(public_id) as public_id, sender_id, receiver_id, status, created_at from Request where ((sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)) and status = 'pending'";
+        const result = await this.db_conn.executeQuery<IRequestRecord>(sql, [s_user_id, r_user_id, r_user_id, s_user_id]);
         
         let return_data : IRepositoryLayerResponse<boolean> = {
             success : true,
@@ -53,9 +53,9 @@ export class ContactRepositiry implements IContactRepository
         return return_data;
     }
 
-    public async insertContactRequest(r_user_id: number, s_user_id: number): Promise<IRepositoryLayerResponse<IRequest>> {
-        const sql = "insert into Request (sender_id, receiver_id) values (?, ?)";
-        const result = await this.db_conn.executeUpdate(sql, [s_user_id, r_user_id]);
+    public async insertContactRequest(public_id : string, r_user_id: number, s_user_id: number): Promise<IRepositoryLayerResponse<IRequest>> {
+        const sql = "insert into Request (public_id, sender_id, receiver_id) values (UUID_TO_BIN(?), ?, ?)";
+        const result = await this.db_conn.executeUpdate(sql, [public_id, s_user_id, r_user_id]);
 
         if (result.affectedRows === 0)
             throw Error("something went wrong, please try again later.");
@@ -96,9 +96,19 @@ export class ContactRepositiry implements IContactRepository
         };
     }
 
-    public async getRequestsByUserID(r_user_id: number, offest : number): Promise<IRepositoryLayerResponse<IRequest []>> {
-        const sql = "select (r.public_id, c.username, c.nickname, r.created_at) from Request r join Client c on r.sender_id = c.user_id where r.receiver_id = ? order by created_at desc limit 10 offset ?"
-        const result = await this.db_conn.executeQuery<IRequest>(sql, [r_user_id, offest]);
+    public async getRequestsByUserID(r_user_id: number, cursor : Date | null): Promise<IRepositoryLayerResponse<IRequest []>> {
+        let sql = "select BIN_TO_UUID(r.public_id) as public_id, c.username, c.nickname, r.created_at from Request r join Client c on r.sender_id = c.user_id where r.receiver_id = ? and r.status = 'pending' ";
+        let params : any[] = [r_user_id];
+
+        if (cursor)
+        {
+            sql += "and r.created_at = ? ";
+            params.push(cursor);
+        }
+
+        sql += "order by r.created_at desc limit 10;";
+
+        const result = await this.db_conn.executeQuery<IRequest>(sql, params);
 
         return {
             success : true,

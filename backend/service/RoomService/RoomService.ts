@@ -1,8 +1,9 @@
 import { Repository } from "../../componantParams.js";
 import { IRoomService } from "./IRoomService.js";
-import { v4 as genaratePublicID } from 'uuid';
+import { v4 } from 'uuid';
 import { IServiceLayerResponse } from "../../responseFormat.js";
 import { IRoom } from "../../domain/IRoom.js";
+import crypto from "crypto";
 
 
 export class RoomService implements IRoomService
@@ -10,7 +11,7 @@ export class RoomService implements IRoomService
 
     public static getInstance(repository : Repository) : RoomService
     {
-        if (!RoomService.instance)
+        if (RoomService.instance)
             return RoomService.instance;
 
         RoomService.instance = new RoomService(repository);
@@ -28,6 +29,17 @@ export class RoomService implements IRoomService
 
     //overrides
 
+    public generateRoomkey() : string
+    {
+        return crypto.randomBytes(32).toString("hex");
+    }
+
+    public generatePublicID() : string
+    {
+        const uuid = v4();
+        return uuid;
+    }
+
     public async performAddMembers(members : number[], room_id : number) : Promise<IServiceLayerResponse>
     {
         await Promise.all(members.map( async (member) => {
@@ -37,9 +49,9 @@ export class RoomService implements IRoomService
         return {success : true, log_message : "members have been added successfully.."};
     }
 
-    public async performCreateRoom(type : string): Promise<IServiceLayerResponse<IRoom>> {
-        const r_result = await this.repository.Iroom_repo.insertChatRoomRecord(genaratePublicID(), type);
-        return { success : true, data : r_result.data, log_message : "got last inserted room"};
+    public async performCreateRoom(public_id : string, enc_key : string, type : string): Promise<IServiceLayerResponse<IRoom>> {
+        const r_result = await this.repository.Iroom_repo.insertChatRoomRecord(public_id, enc_key, type);
+        return { success : true, data : r_result.data, log_message : "New Room has been created"};
     }
 
     public async performGetRoom(public_id: string): Promise<IServiceLayerResponse<IRoom>> 
@@ -52,9 +64,9 @@ export class RoomService implements IRoomService
         return { success : true, data : r_result.data, log_message : "got room by public_id"};
     }
 
-    public async performLoadRooms(user_id: number, offset: number): Promise<IServiceLayerResponse<IRoom[]>> 
+    public async performLoadRooms(user_id: number, cursor : Date | null): Promise<IServiceLayerResponse<IRoom[]>> 
     {
-        const r_result = await this.repository.Iroom_repo.getRoomsByUserID(user_id, offset);
+        const r_result = await this.repository.Iroom_repo.getRoomsByUserID(user_id, cursor);
         
         return {
             success : r_result.success,

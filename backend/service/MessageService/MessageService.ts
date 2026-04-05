@@ -30,9 +30,9 @@ export class MessageService implements IMessageService
         return {success : true, data : m_result.data, log_message : "message was sent"};
     }
 
-    public async performLoadMessages(room_public_id: string, offset: number): Promise<IServiceLayerResponse<IMessage[]>> 
+    public async performLoadMessages(room_public_id: string, cursor : Date | null): Promise<IServiceLayerResponse<IMessage[]>> 
     {
-        const m_result = await this.repository.Imessage_repo.getUserMessages(room_public_id, offset);
+        const m_result = await this.repository.Imessage_repo.getUserMessages(room_public_id, cursor);
         return {success : true, data : m_result.data, log_message : `fetched 10 messages of room ${room_public_id}`};
     }
 }

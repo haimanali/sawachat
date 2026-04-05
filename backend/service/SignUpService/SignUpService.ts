@@ -32,7 +32,7 @@ export class SignUpService implements ISignUpService
                 return {success : false , log_message : "user exists, please try to login..."};
             }
    
-            await this.repository.Iclient_repo.insertClientRecord(username, nickname, password);
-            return { success : true, data : c_result.data!, log_message : "Account created successfully.."};
+            const r_result = await this.repository.Iclient_repo.insertClientRecord(username, nickname, password);
+            return { success : true, data : r_result.data!, log_message : "Account created successfully.."};
         }
 }

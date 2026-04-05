@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiCall } from './apiCaller';
+import { apiCall } from './assets/apiCaller';
 
 
 const ip = "http://localhost:3000/api/auth/session";
@@ -15,7 +15,7 @@ useEffect(() => {
       const response = await apiCall(ip, 'GET');
 
         if (response.success) {
-          navigate(`/u/${response.username}`);
+          navigate(`/u/${response.data.username}`);
         }
     };
     checkSession();

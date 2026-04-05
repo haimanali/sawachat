@@ -25,7 +25,7 @@ export class RoomRepository implements IRoomRepository
 
         private async getRoomByID(room_id : number) : Promise<IRoom>
         {
-            const sql = "select * from ChatRoom where room_id = ?";
+            const sql = "select room_id, BIN_TO_UUID(public_id) as public_id, HEX(enc_key) as enc_key, room_name, type, created_at from ChatRoom where room_id = ?";
             const result = await this.db_conn.executeQuery<IRoom>(sql, [room_id]);
 
             const room : IRoom = result.data[0];
@@ -34,10 +34,10 @@ export class RoomRepository implements IRoomRepository
 
         
         //overrides
-        public async insertChatRoomRecord(room_public_id: string, type: string): Promise<IRepositoryLayerResponse<IRoom>> {
-            const sql = "insert into ChatRoom (public_id, type) values ( UUID_TO_BIN (?) , ? )";
-            const result = await this.db_conn.executeUpdate(sql, [room_public_id, type]);
-
+        public async insertChatRoomRecord(room_public_id: string, enc_key : string, type: string): Promise<IRepositoryLayerResponse<IRoom>> {
+            const sql = "insert into ChatRoom (public_id, enc_key, type) values ( UUID_TO_BIN (?), UNHEX(?), ? )";
+            const result = await this.db_conn.executeUpdate(sql, [room_public_id, enc_key, type]);
+ 
             if (result.affectedRows === 0)
                 throw Error ("something went wrong, please try again later");
 
@@ -83,16 +83,22 @@ export class RoomRepository implements IRoomRepository
             };
         }
 
-        public async getRoomsByUserID(user_id : number, offset : number): Promise<IRepositoryLayerResponse<IRoom []>> 
+        public async getRoomsByUserID(user_id : number, cursor : Date | null): Promise<IRepositoryLayerResponse<IRoom []>> 
         {
-            const sql = `select (cr.room_id, cr.public_id, u.nickname as room_name, cr.type, cr.created_at) 
+            let sql = `select cr.room_id, BIN_TO_UUID(cr.public_id) as public_id, HEX(cr.enc_key) as enc_key, u.nickname as room_name, u.username as room_subname,cr.type, cr.created_at
             from RoomMembers curr join ChatRoom cr on curr.room_id = cr.room_id 
             join RoomMembers other on other.room_id = curr.room_id and other.user_id != curr.user_id
-            join Client u on u.user_id = other.user_id where curr.user_id = ? 
-            order by cr.created_at desc 
-            limit 10 offset ? ;`;
+            join Client u on u.user_id = other.user_id where curr.user_id = ? `;
+            
+            let params : any[] = [user_id];
+            if (cursor)
+            {
+                sql += "and cr.created_at = ? ";
+                params.push(cursor);
+            }
 
-            const result = await this.db_conn.executeQuery<IRoomRecord>(sql, [user_id, offset]);
+            sql += "order by cr.created_at desc limit 10;";
+            const result = await this.db_conn.executeQuery<IRoomRecord>(sql, params);
 
             return {
                 success : true,

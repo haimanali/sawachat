@@ -15,7 +15,7 @@ export async function apiCall(url : string, method = "POST", data? : any)
 
     if(!call.ok)
     {
-        window.location.href = "*";
+        window.location.href = "/error";
         throw Error("fatal error");
     }
 
@@ -23,3 +23,12 @@ export async function apiCall(url : string, method = "POST", data? : any)
     
     return response;
 }
+
+/*
+{
+    success : bool,
+    data : T,
+    log_message : string,
+}
+
+*/

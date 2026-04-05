@@ -1,8 +1,6 @@
-export interface IRoom
+import { IRoomPublic } from "../public/IRoomPublic.js";
+
+export interface IRoom extends IRoomPublic
 {
     readonly room_id : number,
-    public_id : string,
-    room_name : string,
-    type : "private" | "group",
-    created_at : Date,
 }

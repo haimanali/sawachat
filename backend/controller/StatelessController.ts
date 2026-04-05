@@ -40,9 +40,10 @@ export class StatelessController {
 
             if (req.path.startsWith("/api/"))
             {
+                console.log(error.message);
+                
                 const status = error.status || 500;
                 res.status(status).json( {success : false, message : "Server down"} );
-                console.log(error.message);
             }
         });
     }
@@ -138,8 +139,11 @@ export class StatelessController {
         this.app.get("/api/auth/session", this.errorHandler(async (req : Request, res : Response) => {
 
             const session_id = req.cookies.session_id;
-            if(!session_id)
+            if (!session_id)
+            {
+                res.status(200).json( {success : false, log_message : "no session was found"} );
                 return;
+            }
                         
             const payload = await this.Iapp_layer.authenticateBySessionID(session_id);
             res.status(200).json( {
@@ -149,6 +153,20 @@ export class StatelessController {
             } );
             
         }));
+
+        this.app.post("/api/auth/session/logout", this.errorHandler( async (req : Request, res : Response) => {
+            const session_id = req.cookies.session_id;
+            if (!session_id)
+            {
+                res.status(400).json( {success : false, log_message : "no session was found"} );
+                return;
+            }
+
+            const payload = await this.Iapp_layer.logoutUser(session_id);
+
+            res.clearCookie("session_id");
+            res.status(200).json( payload );
+        } ));
 
         this.app.post("/api/login", this.validateJSON(login_schema), this.errorHandler(async (req : Request, res : Response) => {
 

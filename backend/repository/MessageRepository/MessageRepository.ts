@@ -49,16 +49,23 @@ export class MessageRepository implements IMessageRepository
         };
     }
 
-    public async getUserMessages(room_public_id: string, offset: number): Promise<IRepositoryLayerResponse<IMessage []>> {
-        const sql = `select (m.message_id, m.public_id, m.room_id, c.username as username, c.nickname as nickname, m.content, m.created_at) 
+    public async getUserMessages(room_public_id: string, cursor : Date | null): Promise<IRepositoryLayerResponse<IMessage []>> {
+        let sql = `select (m.message_id, BIN_TO_UUID(m.public_id) as public_id, m.room_id, c.username as username, c.nickname as nickname, m.content, m.created_at) 
         from Message m join ChatRoom cr on m.room_id = cr.room_id
         join Client c on c.user_id = m.user_id 
-        where cr.public_id = UUID_TO_BIN (?)
-        order by m.created_at desc
-        limit 10 offset ? ;
-        `;
+        where cr.public_id = UUID_TO_BIN (?) `;
 
-        const result = await this.db_conn.executeQuery<IMessageRecord>(sql, [room_public_id, offset]);
+        let params : any[] = [room_public_id];
+
+        if (cursor)
+        {
+            sql += "and m.created_at = ? ";
+            params.push(cursor);
+        }
+
+        sql += "order by m.created_at desc limit 10;";
+
+        const result = await this.db_conn.executeQuery<IMessageRecord>(sql, params);
         return {
             success : true,
             data : result.data,

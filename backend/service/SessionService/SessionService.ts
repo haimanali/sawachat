@@ -56,7 +56,7 @@ export class SessionService implements ISessionService
         
         if(!cl_result.success)
         {
-            return {success : false , log_message : "user doesn't exists, please SignUp.."};
+            return {success : false , log_message : "user doesn't exists"};
         }
 
         return{
@@ -64,6 +64,11 @@ export class SessionService implements ISessionService
             data : cl_result.data!,
             log_message : "Account found, user logged in..",
         };
+    }
+
+    public async performLogOutSession(session_id : string): Promise<IServiceLayerResponse> 
+    {
+        return await this.repository.Iclient_repo.removeClientSession(session_id);
     }
 
 

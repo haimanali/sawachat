@@ -75,12 +75,14 @@ export class ApiApplication implements IApiApplication
                 log_message : l_result.log_message
             };
         
+        const client_public : IClientPublic = {
+            username : l_result.data!.username,
+            nickname : l_result.data!.nickname,
+        };
+
         return {
             success : l_result.success,
-            data : {
-                username : l_result.data!.username,
-                nickname : l_result.data!.nickname,
-            },
+            data : client_public,
             log_message : l_result.log_message,
 
             internal : 
@@ -104,9 +106,14 @@ export class ApiApplication implements IApiApplication
 
         const l_result = await this.services.Ilogin_service.performUserLogin(session_id, si_result.data!.username, req_body.password, true);
 
+        const client_public : IClientPublic = {
+            username : l_result.data!.username,
+            nickname : l_result.data!.nickname,
+        };
+
         return {
             success : l_result.success,
-            data : l_result.data!,
+            data : client_public,
             log_message : l_result.log_message,
             internal : 
             {
@@ -115,7 +122,18 @@ export class ApiApplication implements IApiApplication
         };
     }
 
-    public async sendContactRequest(r_username : string, s_user_id : number): Promise<IAppLayerResponse<IRequestPublic, IClient>> {
+    public async logoutUser(session_id : string): Promise<IAppLayerResponse> 
+    {
+        return await this.services.Isession_service.performLogOutSession(session_id);
+    }
+
+    public async sendContactRequest(r_username : string, s_client : IClient): Promise<IAppLayerResponse<IRequestPublic, IClient>> {
+        if (r_username === s_client.username)
+            return {
+                success : false,
+                log_message : "you can't add yourself...",
+            }; 
+
         const s_result = await this.services.Isession_service.performVerifyUsername(r_username);
         
         if (!s_result.success)
@@ -123,14 +141,21 @@ export class ApiApplication implements IApiApplication
                 success : s_result.success,
                 log_message : s_result.log_message,
             };
+        
+        const c_result  = await this.services.Icontact_service.performSendRequest(s_result.data!.user_id, s_client.user_id);
 
-        const c_result  = await this.services.Icontact_service.performSendRequest(s_result.data!.user_id, s_user_id);
+        if (!c_result.success)
+            return {
+                success : c_result.success,
+                log_message : c_result.log_message,
+            };
+
         return {
             success : c_result.success,
             data : {
                 public_id : c_result.data!.public_id,
-                username : c_result.data!.username,
-                nickname : c_result.data!.nickname,
+                username : s_client.username,
+                nickname : s_client.nickname,
                 created_at : c_result.data!.created_at,
             },
             log_message : c_result.log_message,
@@ -139,7 +164,7 @@ export class ApiApplication implements IApiApplication
         };
     }
 
-    public async acceptContactRequest(username : string, request_verdict : boolean, r_client : IClient): Promise<IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room? : IRoom}>> 
+    public async acceptContactRequest(username : string, request_verdict : boolean, r_client : IClient): Promise<IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room : IRoom}>> 
     {
         const s_result  = await this.services.Isession_service.performVerifyUsername(username);
         
@@ -149,10 +174,7 @@ export class ApiApplication implements IApiApplication
                 log_message : s_result.log_message,
             };
 
-        const s_user_id = s_result.data!.user_id;
-        const s_username = s_result.data!.username;
-        const s_nickname = s_result.data!.nickname;
-
+        const s_client = s_result.data!;
         const c_result  = await this.services.Icontact_service.performVerdictRequest(request_verdict, s_result.data!.user_id, r_client.user_id);
         
         if (!c_result.success)
@@ -161,43 +183,49 @@ export class ApiApplication implements IApiApplication
                 log_message : c_result.log_message,
             };
 
-        let return_data : IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room? : IRoom}> = {
-            success : c_result.success,
-            log_message : c_result.log_message,
-            internal : 
-            {
-                s_client : s_result.data!
-            },
+
+        await this.services.Icontact_service.performAddContact(s_client.user_id, r_client.user_id);
+
+        const public_id = this.services.Iroom_service.generatePublicID();
+        const enc_key = this.services.Iroom_service.generateRoomkey();
+        
+        const r_result = await this.services.Iroom_service.performCreateRoom(public_id, enc_key, "private");
+
+        const contact_A : IRoomPublic = 
+        {
+            enc_key : r_result.data!.enc_key,
+            public_id : r_result.data!.public_id,
+            room_name : s_client.nickname,
+            room_subname : s_client.username,
+            type : "private",
+            created_at : r_result.data!.created_at,
+        };
+        const contact_B : IRoomPublic = 
+        {
+            enc_key : r_result.data!.enc_key,
+            public_id : r_result.data!.public_id,
+            room_name : r_client.nickname,
+            room_subname : r_client.username,
+            type : "private",
+            created_at : r_result.data!.created_at,
         };
 
-        if (request_verdict) 
-        {
-            await this.services.Icontact_service.performAddContact(s_user_id, r_client.user_id);
-            const r_result = await this.services.Iroom_service.performCreateRoom("private");
-            const contact_A : IRoomPublic = 
-            {
-                public_id : r_result.data!.public_id,
-                room_name : s_nickname,
-                type : "private",
-                created_at : r_result.data!.created_at,
-            };
-            const contact_B : IRoomPublic = 
-            {
-                public_id : r_result.data!.public_id,
-                room_name : r_client.nickname,
-                type : "private",
-                created_at : r_result.data!.created_at,
-            };
-            return_data.data = 
+        await this.services.Iroom_service.performAddMembers([r_client.user_id, s_client.user_id], r_result.data!.room_id);
+
+        return {
+            success : r_result.success,
+            log_message : r_result.log_message,
+            data : 
             {
                 r_room : contact_A,
                 s_room : contact_B,
-            };
-            return_data.internal!.room = r_result.data!;
-            await this.services.Iroom_service.performAddMembers([r_client.user_id, s_user_id], r_result.data!.room_id);
-        }
-
-        return return_data;
+            },
+            internal : 
+            {
+                s_client : s_client,
+                room : r_result.data!,
+            }
+        };
     }
 
     public async sendMessage(room_public_id : string, content : string, s_client : IClient): Promise<IAppLayerResponse<IMessagePublic, { room_id : number }>> 
@@ -231,9 +259,9 @@ export class ApiApplication implements IApiApplication
         };
     }
 
-    public async fetchUserRequests(client: IClient, offset: number): Promise<IAppLayerResponse<IRequestPublic[]>> 
+    public async fetchUserRequests(client: IClient,  cursor : Date | null): Promise<IAppLayerResponse<IRequestPublic[]>> 
     {
-        const c_result = await this.services.Icontact_service.performLoadRequests(client.user_id, offset);
+        const c_result = await this.services.Icontact_service.performLoadRequests(client.user_id, cursor);
 
         const request_public : IRequestPublic [] = [];
 
@@ -255,17 +283,19 @@ export class ApiApplication implements IApiApplication
         };
     }
 
-    public async fetchUserRooms(client: IClient, offset: number): Promise<IAppLayerResponse<IRoomPublic[]>> 
+    public async fetchUserRooms(client: IClient, cursor : Date | null): Promise<IAppLayerResponse<IRoomPublic[]>> 
     {
-        const r_result = await this.services.Iroom_service.performLoadRooms(client.user_id, offset);
+        const r_result = await this.services.Iroom_service.performLoadRooms(client.user_id, cursor);
 
         const room_public : IRoomPublic [] = [];
 
         r_result.data!.map( (room) => {
             room_public.push ( 
             {
+                enc_key : room.enc_key,
                 public_id : room.public_id,
                 room_name : room.room_name,
+                room_subname : room.room_subname,
                 type : room.type,
                 created_at : room.created_at,
             });
@@ -278,9 +308,9 @@ export class ApiApplication implements IApiApplication
         };
     }   
 
-    public async fetchUserMessages(room_public_id : string, offset: number): Promise<IAppLayerResponse<IMessagePublic[]>> 
+    public async fetchUserMessages(room_public_id : string, cursor : Date | null): Promise<IAppLayerResponse<IMessagePublic[]>> 
     {
-        const m_result = await this.services.Imessage_service.performLoadMessages(room_public_id, offset);
+        const m_result = await this.services.Imessage_service.performLoadMessages(room_public_id, cursor);
 
         const message_public : IMessagePublic [] = [];
 

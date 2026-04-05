@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Signup from "./signup"
@@ -16,16 +16,18 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/u/:username" element={<Home />} />
+        <Route path="/u/:username" element={ <Home />}/>
+        <Route path="/error" element={<Error  />} />
 
-        <Route path="*" element={<Error />} />
+
+        <Route path="*" element={<Error />} /> 
       </Routes>
     </BrowserRouter>
   );
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>,
+  </StrictMode>,
 )
