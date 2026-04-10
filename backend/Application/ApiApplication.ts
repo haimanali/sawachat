@@ -8,6 +8,7 @@ import { IRequestPublic } from "../public/IRequestPublic.js";
 import { IRoomPublic } from "../public/IRoomPublic.js";
 import { IRoom } from "../domain/IRoom.js";
 import { IMessagePublic } from "../public/IMessagePublic.js";
+import { IMessage } from "../domain/IMessage.js";
 
 
 export class ApiApplication implements IApiApplication
@@ -51,6 +52,7 @@ export class ApiApplication implements IApiApplication
         
         if (!result.data)
             return {success : result.success, log_message : result.log_message};
+
         
         return {
             success : result.success,
@@ -228,7 +230,7 @@ export class ApiApplication implements IApiApplication
         };
     }
 
-    public async sendMessage(room_public_id : string, content : string, s_client : IClient): Promise<IAppLayerResponse<IMessagePublic, { room_id : number }>> 
+    public async sendMessage(room_public_id : string, iv: string, content : string, s_client : IClient): Promise<IAppLayerResponse<IMessagePublic, { room_id : number }>> 
     {
         const r_result = await this.services.Iroom_service.performGetRoom(room_public_id);
         if (!r_result.success)
@@ -236,18 +238,24 @@ export class ApiApplication implements IApiApplication
                 success : r_result.success,
                 log_message : r_result.log_message,
             };
-
-        const m_result = await this.services.Imessage_service.performSendMessage(content, s_client.user_id, r_result.data!.room_id);
+        
+        const msg_public_id = this.services.Imessage_service.generatePublicID();
+        const m_result = await this.services.Imessage_service.performSendMessage(msg_public_id, iv, content, s_client.user_id, r_result.data!.room_id);
 
         return {
             success : m_result.success,
             data : 
             {
                 public_id : m_result.data!.public_id,
+                iv : iv,
+                room_public_id : room_public_id,
                 username : s_client.username,
                 nickname : s_client.nickname,
                 content : m_result.data!.content,
                 created_at : m_result.data!.created_at,
+                is_sent : true,
+                is_delivered : m_result.data!.is_delivered,
+                is_read : m_result.data!.is_read,
             },
             log_message : m_result.log_message,
 
@@ -257,6 +265,20 @@ export class ApiApplication implements IApiApplication
             },
 
         };
+    }
+
+    public async deliverUserMessage(msg_public_id: string, room_public_id : string, s_username : string, is_delivered: boolean): Promise<IAppLayerResponse<void, number>> {
+        const s_result = await this.services.Isession_service.performVerifyUsername(s_username);
+        if (!s_result.success)
+            return{
+                success : s_result.success,
+                log_message : s_result.log_message,
+            };
+
+        const m_result = await this.services.Imessage_service.performDeliverUserMessage(msg_public_id, is_delivered);
+        const r_result = await this.services.Iroom_service.performGetRoom(room_public_id);
+
+        return {success : m_result.success, internal : r_result.data!.room_id, log_message : m_result.log_message};
     }
 
     public async fetchUserRequests(client: IClient,  cursor : Date | null): Promise<IAppLayerResponse<IRequestPublic[]>> 
@@ -283,28 +305,21 @@ export class ApiApplication implements IApiApplication
         };
     }
 
-    public async fetchUserRooms(client: IClient, cursor : Date | null): Promise<IAppLayerResponse<IRoomPublic[]>> 
+    public async fetchUserRooms(client: IClient, cursor : Date | null): Promise<IAppLayerResponse<IRoomPublic[], number[]>> 
     {
         const r_result = await this.services.Iroom_service.performLoadRooms(client.user_id, cursor);
-
-        const room_public : IRoomPublic [] = [];
+        const room_public : IRoomPublic [] = r_result.data!;
+        const room_ids : number [] = [];
 
         r_result.data!.map( (room) => {
-            room_public.push ( 
-            {
-                enc_key : room.enc_key,
-                public_id : room.public_id,
-                room_name : room.room_name,
-                room_subname : room.room_subname,
-                type : room.type,
-                created_at : room.created_at,
-            });
+            room_ids.push(room.room_id);
         });
 
         return {
             success : r_result.success,
             data : room_public,
             log_message : r_result.log_message,
+            internal : room_ids,
         };
     }   
 
@@ -316,11 +331,8 @@ export class ApiApplication implements IApiApplication
 
         m_result.data!.map( (message) => {
             message_public.push( {
-                public_id : message.public_id,
-                username : message.username,
-                nickname : message.nickname,
-                content : message.content,
-                created_at : message.created_at,
+                ...message,
+                is_sent : true,
             });
         });
 
@@ -329,6 +341,18 @@ export class ApiApplication implements IApiApplication
             data : message_public,
             log_message : m_result.log_message,
         };
+    }
+
+    public async deliverAllRecievedMessages(client : IClient) : Promise<IAppLayerResponse<void, IMessage []>>
+    {
+        const m_result = await this.services.Imessage_service.performDeliverReceivedMessages(client);
+
+        return{
+            success : m_result.success,
+            internal : m_result.data,
+            log_message : m_result.log_message,
+        }
+
     }
     
 }

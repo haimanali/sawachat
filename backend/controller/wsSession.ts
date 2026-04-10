@@ -84,6 +84,20 @@ export class wsSession
 
         const data : IActionRequest = result.data!;
         switch (data.type) {
+
+            case IPayloadRequestType.DELIVER_RECEIVED_MESSAGES: // could use bulk delivary instead....
+                {
+                    const m_result = await this.Iapp_layer.deliverAllRecievedMessages(this.client);
+
+
+                    m_result.internal?.map( (message) => {
+
+                        this.stateful_controller.broadcastMessage(IPayloadResponseType.ONMESSAGE_RECEIVED, message.room_id, this, this.preparePayload({success : m_result.success, data : {msg_public_id : message.public_id, room_public_id : message.room_public_id, is_delivered : message.is_delivered}, log_message : m_result.log_message}));
+                        
+                    });
+
+                }
+                break;
             case IPayloadRequestType.LOAD_REQUESTS:
                 {
                     const cursor = data.payload.cursor;
@@ -97,7 +111,15 @@ export class wsSession
                     const cursor = data.payload.cursor;
 
                     const result = await this.Iapp_layer.fetchUserRooms(this.client, cursor);
-                    this.write(IPayloadResponseType.ONLOAD_ROOMS, this.preparePayload(result));
+
+                    result.internal?.map( (room_ids) => {
+                        this.stateful_controller.setRoomMember(room_ids, this.client.user_id);
+                        
+                    });
+
+
+                    this.write(IPayloadResponseType.ONLOAD_ROOMS, this.preparePayload(result)); //async write back..
+
                 }
                 break;
             case IPayloadRequestType.LOAD_MESSAGES:
@@ -106,6 +128,7 @@ export class wsSession
                     const room_public_id = data.payload.room_public_id;
 
                     const result = await this.Iapp_layer.fetchUserMessages(room_public_id, cursor);
+
                     this.write(IPayloadResponseType.ONLOAD_MESSAGES, this.preparePayload(result));
                 }
                 break;
@@ -146,19 +169,37 @@ export class wsSession
                 {
                     const room_public_id = data.payload.room_public_id;
                     const content = data.payload.msg_content;
+                    const iv = data.payload.iv;
 
-                    const result = await this.Iapp_layer.sendMessage(room_public_id, content, this.client);
+                    const result = await this.Iapp_layer.sendMessage(room_public_id, iv, content, this.client);
 
-                    this.write(IPayloadResponseType.ONSEND_MESSAGE, this.preparePayload(result));
+
+                    this.write(IPayloadResponseType.ONSEND_MESSAGE, this.preparePayload({success : result.success, data : {
+                                                                                                                            enc_message : result.data,
+                                                                                                                            iv : iv,
+                                                                                                                        }, log_message : result.log_message}));
 
                     //broadcast to users in the room,
-                    this.stateful_controller.broadcastMessage(IPayloadResponseType.ONRECEIVE_MESSAGE, result.internal!.room_id, this, this.preparePayload(result));
+                    this.stateful_controller.broadcastMessage(IPayloadResponseType.ONRECEIVE_MESSAGE, result.internal!.room_id, this, this.preparePayload({success : result.success, data : {
+                                                                                                                                                                                                enc_message : result.data,
+                                                                                                                                                                                                iv : iv,
+                                                                                                                                                                                            }, log_message : result.log_message}));
                 }
                 break;
             
             case IPayloadRequestType.MESSAGE_RECEIVED : 
             {
+                const msg_public_id = data.payload.msg_public_id;
+                const room_public_id = data.payload.room_public_id;
+                const s_username = data.payload.s_username;
+                const is_delivered = data.payload.is_delivered;
 
+                const m_result = await this.Iapp_layer.deliverUserMessage(msg_public_id, room_public_id, s_username, is_delivered);
+                
+                if (!m_result.success)
+                    return;
+
+                this.stateful_controller.broadcastMessage(IPayloadResponseType.ONMESSAGE_RECEIVED, m_result.internal!, this, this.preparePayload({success : m_result.success, data : {msg_public_id : msg_public_id, room_public_id : room_public_id, is_delivered : is_delivered}, log_message : m_result.log_message}));
             }
             break;
 

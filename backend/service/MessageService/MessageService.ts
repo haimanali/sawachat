@@ -1,15 +1,16 @@
-import { off } from "process";
+import { v4 } from "uuid";
 import { Repository } from "../../componantParams.js";
 import { IMessage } from "../../domain/IMessage.js";
 import { IServiceLayerResponse } from "../../responseFormat.js";
 import { IMessageService } from "./IMessageService.js";
+import { IClient } from "../../domain/IClient.js";
 
 
 export class MessageService implements IMessageService
 {
     public static getInstance(repository : Repository) : MessageService
     {
-        if (!MessageService.instance)
+        if (MessageService.instance)
             return MessageService.instance;
 
         MessageService.instance = new MessageService(repository);
@@ -25,14 +26,29 @@ export class MessageService implements IMessageService
     }
 
     //overrides 
-    public async performSendMessage(content: string, s_user_id : number, room_id : number): Promise<IServiceLayerResponse<IMessage>> {
-        const m_result = await this.repository.Imessage_repo.insertMessageRecord(content, s_user_id, room_id);
+    public generatePublicID() : string
+    {
+        return v4();
+    }
+
+    public async performSendMessage(public_id : string, iv : string, content: string, s_user_id : number, room_id : number): Promise<IServiceLayerResponse<IMessage>> {
+        const m_result = await this.repository.Imessage_repo.insertMessageRecord(public_id, iv, content, s_user_id, room_id);
         return {success : true, data : m_result.data, log_message : "message was sent"};
+    }
+
+    public async performDeliverReceivedMessages(client: IClient): Promise<IServiceLayerResponse<IMessage []>> {
+        const m_result = await this.repository.Imessage_repo.updateAllMessageDelivered(client.user_id);
+        return {success : true, data : m_result.data, log_message : m_result.log_message};
+    }
+
+    public async performDeliverUserMessage(public_id: string, is_delivered: boolean): Promise<IServiceLayerResponse> {
+        const m_result = await this.repository.Imessage_repo.updateMessageDeliverRecord(public_id, is_delivered);
+        return {success : true, log_message : "message was delivered"};
     }
 
     public async performLoadMessages(room_public_id: string, cursor : Date | null): Promise<IServiceLayerResponse<IMessage[]>> 
     {
-        const m_result = await this.repository.Imessage_repo.getUserMessages(room_public_id, cursor);
+        const m_result = await this.repository.Imessage_repo.getClientMessages(room_public_id, cursor);
         return {success : true, data : m_result.data, log_message : `fetched 10 messages of room ${room_public_id}`};
     }
 }

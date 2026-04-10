@@ -9,7 +9,10 @@ export enum IPayloadRequestType
     LOAD_ROOMS = "load_rooms",
     LOAD_REQUESTS = "load_requests",
     LOAD_MESSAGES =  "load_messages",
+    DELIVER_RECEIVED_MESSAGES = "deliver_received_messages",
+    LIMIT = 10,
 }
+
 
 //stateless schema
 export const login_schema = z.object({
@@ -52,6 +55,10 @@ const load_messages = z.object({
     }),
 });
 
+const deliver_received_messages = z.object({
+    type : z.literal(IPayloadRequestType.DELIVER_RECEIVED_MESSAGES)
+});
+
 const verdict_req_schema = z.object(
     {
         type : z.literal(IPayloadRequestType.VERDICT_REQUEST),
@@ -75,7 +82,8 @@ const send_message_schema = z.object(
         type : z.literal(IPayloadRequestType.SEND_MESSAGE),
         payload : z.object({
             room_public_id : z.string().max(36),
-            msg_content : z.string().min(1).max(200),
+            msg_content : z.string().min(1).max(300),
+            iv : z.string().max(32),
         }),
     }
 );
@@ -84,6 +92,9 @@ const message_received = z.object({
     type : z.literal(IPayloadRequestType.MESSAGE_RECEIVED),
     payload : z.object({
         msg_public_id : z.string().max(36),
+        room_public_id : z.string().max(36),
+        s_username : z.string().max(16),
+        is_delivered : z.boolean(),
     }),
 });
 
@@ -95,6 +106,7 @@ export const action_schema = z.discriminatedUnion("type", [
     message_received,
     send_request_schema,
     verdict_req_schema,
+    deliver_received_messages
 ]);
 
 export type IActionRequest = z.infer<typeof action_schema>;

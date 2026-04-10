@@ -35,7 +35,7 @@ export class ContactRepositiry implements IContactRepository
     //overrides
 
     public async isRequestPending(r_user_id: number, s_user_id: number): Promise<IRepositoryLayerResponse<boolean>> {
-        const sql = "select request_id, BIN_TO_UUID(public_id) as public_id, sender_id, receiver_id, status, created_at from Request where ((sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)) and status = 'pending'";
+        const sql = "select request_id, BIN_TO_UUID(public_id) as public_id, sender_id, receiver_id, status, created_at from Request where ((sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)) and (status = 'pending' or status = 'accepted')";
         const result = await this.db_conn.executeQuery<IRequestRecord>(sql, [s_user_id, r_user_id, r_user_id, s_user_id]);
         
         let return_data : IRepositoryLayerResponse<boolean> = {
@@ -102,7 +102,7 @@ export class ContactRepositiry implements IContactRepository
 
         if (cursor)
         {
-            sql += "and r.created_at = ? ";
+            sql += "and r.created_at < ? ";
             params.push(cursor);
         }
 

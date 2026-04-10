@@ -2,6 +2,7 @@ export enum IPayloadResponseType
 {
     ONSEND_MESSAGE = "onsend_message",
     ONRECEIVE_MESSAGE = "onreceive_message",
+    ONMESSAGE_RECEIVED = "onmessage_received",
 
     ONVERDICT_REQUEST = "onverdict_request_create_room",
     ONCREATE_CONTACT = "oncreate_contact",

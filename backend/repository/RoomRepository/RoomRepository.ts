@@ -93,7 +93,7 @@ export class RoomRepository implements IRoomRepository
             let params : any[] = [user_id];
             if (cursor)
             {
-                sql += "and cr.created_at = ? ";
+                sql += "and cr.created_at < ? ";
                 params.push(cursor);
             }
 

@@ -46,8 +46,9 @@ export class StatefulController{
 
     public async broadcastMessage(type : string, room_id : number, init_wsSession : wsSession, payload : any) : Promise<void>
     {
-        this.active_rooms.get(room_id)?.forEach( (user_id) => {
+        
 
+        this.active_rooms.get(room_id)?.forEach( (user_id) => {
             this.active_clients.get(user_id)?.forEach( (other_wsSession) => {
                 if (other_wsSession === init_wsSession) return;
                 other_wsSession?.write(type, payload);
@@ -88,8 +89,8 @@ export class StatefulController{
     //connection manager
     private active_clients = new Map<number, Set<wsSession>>();
     
-    private active_rooms = new Map<number, Set<number>>();
-    private client_room = new Map<number, Set<number>>();
+    public active_rooms = new Map<number, Set<number>>();
+    private client_room = new Map<number, Set<number>>(); //for client disconnection optimization...
 
     
     //ws manager
