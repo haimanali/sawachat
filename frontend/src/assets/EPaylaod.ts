@@ -7,6 +7,7 @@ export enum IPayloadRequestType
     LOAD_ROOMS = "load_rooms",
     LOAD_REQUESTS = "load_requests",
     LOAD_MESSAGES =  "load_messages",
+    DELIVER_RECEIVED_MESSAGES = "deliver_received_messages",
     LIMIT = 10,
 }
 
@@ -15,6 +16,7 @@ export enum IPayloadResponseType
 {
     ONSEND_MESSAGE = "onsend_message",
     ONRECEIVE_MESSAGE = "onreceive_message",
+    ONMESSAGE_RECEIVED = "onmessage_received",
 
     ONVERDICT_REQUEST = "onverdict_request_create_room",
     ONCREATE_CONTACT = "oncreate_contact",

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiCall } from './assets/apiCaller';
 
@@ -8,18 +8,27 @@ const ip = "http://localhost:3000/api/auth/session";
 
 export default function Index() {
   const navigate = useNavigate();
-  
+  const [status, setStatus] = useState<'loading' | 'authorized'>("loading");  
+
 useEffect(() => {
     const checkSession = async () => {
 
       const response = await apiCall(ip, 'GET');
 
         if (response.success) {
+          setStatus("authorized");
           navigate(`/u/${response.data.username}`);
         }
     };
     checkSession();
   }, []);
+
+  if (status === "loading")
+    return (<>
+      <div>
+        loading...
+      </div>
+    </>);
 
 
   return (

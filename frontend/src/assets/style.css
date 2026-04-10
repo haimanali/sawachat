@@ -291,13 +291,22 @@ body {
     letter-spacing: 0.05px;
 }
 
-.btn-primary:hover {
+.btn-primary:disabled
+{
+    opacity: 0.5;
+    cursor: auto;
+    filter: grayscale(0.5); 
+    transform: none; 
+    box-shadow: none;
+}
+
+.btn-primary:not(:disabled):hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-btn);
     filter: brightness(1.06);
 }
 
-.btn-primary:active {
+.btn-primary:not(:disabled):active {
     transform: translateY(0);
     box-shadow: none;
 }
@@ -1476,4 +1485,120 @@ a.btn-back {
 
 :root[data-theme="dark"] .dropdown-item:hover {
     background: var(--surface);
+}
+
+/*message container*/
+
+.messages-area {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    position: relative;
+}
+
+.messages-list {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 12px; /* Space between messages */
+    flex: 1; /* Allows it to grow and push empty space to the bottom */
+}
+
+/* The main container for the whole row */
+.message-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-end; /* Keeps the avatar aligned to the bottom of the bubble */
+    width: 100%;
+}
+
+.message-row.own-message {
+    flex-direction: row-reverse;
+}
+
+/* The Avatar */
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Wrapper for the bubble and the metadata */
+.message-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 75%; /* Prevents text from stretching across the whole screen */
+}
+
+/* The actual colored bubble */
+.message-bubble {
+    background: linear-gradient(135deg, var(--primary), var(--primary-deep, var(--primary)));
+    color: white;
+    padding: 10px 14px;
+    border-radius: 16px 16px 16px 4px; /* Creates that classic "chat tail" on the bottom left */
+    font-size: 0.95rem;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Footer area inside the bubble for the dots */
+.message-bubble-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+/* The Dots Container */
+.status-indicators {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+}
+
+/* Individual Dot */
+.status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4); /* Faded by default */
+    transition: background-color 0.2s;
+}
+
+/* Active states for dots */
+.status-dot.active {
+    background-color: white; /* Bright white when true */
+}
+
+/* The Timestamp (Hidden by default) */
+.message-time {
+    font-size: 0.75rem;
+    color: var(--text-sub);
+    margin-top: 4px;
+    margin-left: 4px;
+    opacity: 0; /* Invisible */
+    transition: opacity 0.2s ease;
+    user-select: none;
+}
+
+.empty-state-text, .no-room-selected {
+    margin: auto; /* It's okay to use margin auto here to center the empty states */
+    text-align: center;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* THE MAGIC: When hovering over the row, show the time */
+.message-row:hover .message-time {
+    opacity: 1;
 }

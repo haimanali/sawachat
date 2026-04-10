@@ -7,12 +7,15 @@ import { IRoomPublic } from "./assets/public/IRoomPublic";
 import { IRequestPublic } from "./assets/public/IRequestPublic";
 import { IPayloadRequestType, IPayloadResponseType, IPayloadInterface } from "./assets/EPaylaod";
 import { IMessagePublic } from "./assets/public/IMessagePublic";
+import { initKey } from "./assets/initKey";
+import { msgEncrytion } from "./assets/msgEncrytion";
+import { msgDecryption } from "./assets/msgDecryption";
 
 export default function Home() {
     const { username } = useParams<{ username: string }>();
     const navigate = useNavigate();
     const [activeTab, setActive] = useState<"rooms" | "requests">("rooms");
-    const [status, setStatus] = useState<string>("loading");
+    const [status, setStatus] = useState<"authorized" | "loading">("loading");
     const [toastMsg, setToastMsg] = useState("");
 
     const showToast = (msg: string, ms = 2800) => {
@@ -20,212 +23,366 @@ export default function Home() {
         setTimeout(() => setToastMsg(""), ms);
     };
 
+    const [userState, setUserState] = useState<IClientPublic>();
+
     const [rooms, setRooms] = useState<IRoomPublic []>([]);
     const [hasMoreRooms, setHasMoreRooms] = useState<boolean>(true);
-    const [roomSetup, setRoomSetup] = useState<IRoomPublic | null>(null);
+    const [activeRoomSetup, setActiveRoomSetup] = useState<IRoomPublic | null>(null);
     const [roomSettingsMenu, setRoomSettingsMenu] = useState<boolean>(false);
-
+    
     const [requests, setRequests] = useState<IRequestPublic []>([]);
     const [hasMoreRequests, setHasMoreRequests] = useState<boolean>(true);
-
+    
     const [messages, setMessages] = useState<IMessagePublic []>([]);
-
+    const [msgInput, setMsgInput] = useState<string>("");
+    const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true);
+    
     const [settingsPOPUP, setSettingsPOPUP] = useState<boolean>(false);
-
+    
     const [addContactPOPUP, setaddContactPOPUP] = useState<boolean>(false);
     const [contactRequestError, setContactRequestError] = useState<string>("");
     const [addContactUsername, setAddContactUsername] = useState<string>("");
-
-    const conn_soc = useRef<Socket | null>(null);
+    
+    const socket_ref = useRef<Socket | null>(null);
+    
     const requests_cursor = useRef<Date | null>(null);
-    const rooms_cursor = useRef<Date | null>(null); 
 
+    const rooms_cursor = useRef<Date | null>(null);
+    const activeRoomRef = useRef<IRoomPublic | null>(null);
+    
+    const messages_cursor = useRef<Date | null>(null); 
+    const messageEnd_anchor = useRef<HTMLDivElement | null>(null);
+
+    const appStart = useRef<boolean>(false);
+    
     useEffect(() => {
+        
+        if (appStart.current)
+            return;
+
+        appStart.current = true;
+
         const verifySession = async () => {
+            
             const url = `http://localhost:3000/api/auth/session/check/${username}`;
             const response : IPayloadInterface<IClientPublic> = await apiCall(url, "GET");
 
             if (response.success) {
                 setStatus("authorized");
+                setUserState(response.data);
 
-            } else {
-                navigate("/");
-            }
-
-        };
-
-        verifySession();
-
-    }, [username, navigate]);
-
-    useEffect( () => {
-
-        if (status !== "authorized")
-            return;
-
-        if (conn_soc.current && conn_soc.current.connected)
-            return;
-
-        const socket = io("http://localhost:3000", {
-            withCredentials : true,
-            transports : ["websocket"],
-        });
-
-        conn_soc.current = socket;
-
-        socket.on("connect", () => {
-            console.log("client has been connected");
-        });
-
-
-        //EVENT HANDLERS.....
-
-        socket.on(IPayloadResponseType.ONLOAD_ROOMS, (response) => {
-            const payload : IPayloadInterface<IRoomPublic []> = response.payload;
-            const room_items : IRoomPublic [] = payload.data!;
-
-            if (room_items.length === 0)
-            {
-                setHasMoreRooms(false);
-                return;
-            }
-
-            setRooms( payload.data! );
-
-            rooms_cursor.current = payload.data![ payload.data!.length - 1 ].created_at;
-
-            if (room_items.length < IPayloadRequestType.LIMIT)
-            {
-                setHasMoreRooms(false);
-                return;
-            }
-        });
-
-        socket.on(IPayloadResponseType.ONLOAD_REQUESTS, (response) => {
-            const payload : IPayloadInterface<IRequestPublic []> = response.payload;
-            const request_items : IRequestPublic [] = payload.data!;
-
-            if (request_items.length === 0)
-            {
-                setHasMoreRequests(false);
-                return;
-            }
-            
-            requests_cursor.current = request_items[ request_items.length - 1 ].created_at;
-            
-            setRequests( (prev) => [...prev, ...request_items] );
-
-            if (request_items.length < IPayloadRequestType.LIMIT)
-            {
-                setHasMoreRequests(false);
-                return;
-            }
-        });
-
-        socket.on(IPayloadResponseType.ONLOAD_MESSAGES, (response) => {
-            
-        });
-
-        socket.on(IPayloadResponseType.ONSEND_MESSAGE, (response) => {
-            
-        });
-
-        socket.on(IPayloadResponseType.ONSEND_REQUEST, (response) => {
-            const payload : IPayloadInterface <IRequestPublic> = response.payload;
-
-            setAddContactUsername("");
-
-            if (!payload.success)
-            {
-                setContactRequestError(payload.log_message);
                 
-                setTimeout(() => {
-                    setContactRequestError("");
-                }, 2000);
+                const socket = io("http://localhost:3000", {
+                    withCredentials : true,
+                    transports : ["websocket"],
+                });
 
-                return;
-            }
-
-            setaddContactPOPUP(false);
-            showToast(payload.log_message);
-            
-        });
+                socket_ref.current = socket;
 
 
-        socket.on(IPayloadResponseType.ONRECEIVE_REQUEST, (response) => {
-            
-            const payload : IPayloadInterface <IRequestPublic> = response.payload;
-            
-            setRequests( (prev) => [payload.data!, ...prev] );
+                socket.on(IPayloadResponseType.ONLOAD_ROOMS, (response) => {
+                        const payload : IPayloadInterface<IRoomPublic []> = response.payload;
+                        const room_items : IRoomPublic [] = payload.data!;
 
-        });
+                        if (room_items.length === 0)
+                        {
+                            setHasMoreRooms(false);
+                            return;
+                        }
 
-        socket.on(IPayloadResponseType.ONVERDICT_REQUEST, (response) => {
+                        setRooms( payload.data! );
+                        setActiveRoomSetup( payload.data![0] );
 
-            const payload : IPayloadInterface<string> = response.payload;
+                        rooms_cursor.current = payload.data![ payload.data!.length - 1 ].created_at;
 
-            setRequests( prev =>  prev.filter( req =>  req.public_id !== payload.data!  ) );
+                        if (room_items.length < IPayloadRequestType.LIMIT)
+                        {
+                            setHasMoreRooms(false);
+                            return;
+                        }
+                    });
 
-            showToast(payload.log_message) ;
-        });
+                    socket.on(IPayloadResponseType.ONLOAD_REQUESTS, (response) => {
+                        const payload : IPayloadInterface<IRequestPublic []> = response.payload;
+                        const request_items : IRequestPublic [] = payload.data!;
 
-        socket.on(IPayloadResponseType.ONCREATE_CONTACT, (response) => {
-            const payload : IPayloadInterface<IRoomPublic> = response.payload;
+                        if (request_items.length === 0)
+                        {
+                            setHasMoreRequests(false);
+                            return;
+                        }
+                        
+                        requests_cursor.current = request_items[ request_items.length - 1 ].created_at;
+                        
+                        setRequests( request_items );
 
-            setRooms( (prev) => [payload.data!, ...prev] );
+                        if (request_items.length < IPayloadRequestType.LIMIT)
+                        {
+                            setHasMoreRequests(false);
+                            return;
+                        }
+                    });
 
-        });
+                    socket.on(IPayloadResponseType.ONLOAD_MESSAGES, async (response) => {
+                        const payload : IPayloadInterface<IMessagePublic []> = response.payload;
+                        const encmessage_items : IMessagePublic [] = payload.data!;
 
 
-        socket.on("disconnect", () => {
-            console.log("client has disconnected");
-        });
+                        if (encmessage_items.length === 0)
+                            {
+                                setHasMoreMessages(false);
+                                return;
+                            }
 
-        socket.on("error", (reason) => {
-            console.log(reason);
-        })
+                        messages_cursor.current = encmessage_items[ encmessage_items.length - 1 ].created_at;
+                        
+                        const crypto_key = await initKey(activeRoomRef.current!.enc_key);
 
-        return () => {
-            if (conn_soc.current)
-            {
-                conn_soc.current.disconnect();
-                conn_soc.current = null;
-            }
-        };
+                        const decrpyt_messages =  await Promise.all(encmessage_items.map( async (enc_message) => {
 
-    }, [status, conn_soc.current]);
+                            const decrpyted_text = await msgDecryption(enc_message.content, crypto_key, enc_message.iv);
 
-    useEffect(() => {
-        if(status !== "authorized" && !conn_soc.current?.connected)
-            return;
+                            return{
+                                ...enc_message,
+                                content : decrpyted_text,
+                            };
 
-        let payload_type;
-        let tab_cursor;
+                        }));
 
-        switch (activeTab)
-        {
-            case "rooms" :
-                payload_type = IPayloadRequestType.LOAD_ROOMS;
-                tab_cursor = rooms_cursor.current;
-                break;
+                        decrpyt_messages.reverse();
 
-            case "requests" :
-                payload_type = IPayloadRequestType.LOAD_REQUESTS;
-                tab_cursor = requests_cursor.current;
-                break;
+                        setMessages( (prev) => [...decrpyt_messages, ...prev] );
+
+
+                        if (encmessage_items.length < IPayloadRequestType.LIMIT)
+                        {
+                            setHasMoreMessages(false);
+                            return;
+                        }
+                    });
+
+                    socket.on(IPayloadResponseType.ONSEND_MESSAGE, async (response) => {
+                        const payload : IPayloadInterface<{enc_message : IMessagePublic, iv: string}> = response.payload;
+                        
+                        const enc_message = payload.data!.enc_message;
+                        const iv = payload.data!.iv;
+
+                        if (enc_message.room_public_id !== activeRoomRef.current?.public_id)
+                            return;
+
+                        const crypto_key = await initKey(activeRoomRef.current!.enc_key);
+                        const dercrypted_text = await msgDecryption(enc_message.content, crypto_key, iv);
+
+                        let message : IMessagePublic =
+                        {
+                            ...enc_message,
+                            is_sent : true,
+                            is_delivered : false,
+                            is_read : false,
+                            content : dercrypted_text,
+                        } 
+
+                        setMessages( (prev) => [...prev, message]);
+                        
+                    });
+
+                    socket.on(IPayloadResponseType.ONRECEIVE_MESSAGE, async (response) => {
+                        const payload : IPayloadInterface<{enc_message : IMessagePublic, iv: string}> = response.payload;
+                        const enc_message = payload.data!.enc_message;
+
+                        const request_payload = {
+                            type : IPayloadRequestType.MESSAGE_RECEIVED,
+                            payload : {
+                                msg_public_id : enc_message.public_id,
+                                room_public_id : enc_message.room_public_id,
+                                s_username : enc_message.username,
+                                is_delivered : true,
+                            },
+                        };
+
+                        socket.emit("message", request_payload);
+
+                        if (enc_message.room_public_id !== activeRoomRef.current?.public_id)
+                            return;
+                        
+                        
+                        const iv = payload.data!.iv;
+
+                        const crypto_key = await initKey(activeRoomRef.current!.enc_key);
+                        const dercrypted_text = await msgDecryption(enc_message.content, crypto_key, iv);
+
+                        let message : IMessagePublic =
+                        {
+                            ...enc_message,
+                            is_sent : true,
+                            is_delivered : true,
+                            is_read : false,
+                            content : dercrypted_text,
+                        } 
+
+                        setMessages( (prev) => [...prev, message]);
+
+
+                    });
+
+                    socket.on(IPayloadResponseType.ONMESSAGE_RECEIVED, (response) => {
+                        const payload : IPayloadInterface<{msg_public_id : string, room_public_id : string, is_delivered : boolean}> = response.payload;
+
+                        if (payload.data!.room_public_id !== activeRoomRef.current?.public_id)
+                            return;
+                        
+                        setMessages( (prev) => prev.map (message => {
+                            if (message.public_id === payload.data!.msg_public_id)
+                                return {...message, is_delivered : payload.data!.is_delivered};
+
+                            return message;
+                        }));
+
+                    });
+
+                    socket.on(IPayloadResponseType.ONSEND_REQUEST, (response) => {
+                        const payload : IPayloadInterface <IRequestPublic> = response.payload;
+
+                        setAddContactUsername("");
+
+                        if (!payload.success)
+                        {
+                            setContactRequestError(payload.log_message);
+                            
+                            setTimeout(() => {
+                                setContactRequestError("");
+                            }, 1000);
+
+                            return;
+                        }
+
+                        setaddContactPOPUP(false);
+                        showToast(payload.log_message);
+                        
+                    });
+
+
+                    socket.on(IPayloadResponseType.ONRECEIVE_REQUEST, (response) => {
+                        
+                        const payload : IPayloadInterface <IRequestPublic> = response.payload;
+                        
+                        setRequests( (prev) => [payload.data!, ...prev] );
+
+                    });
+
+                    socket.on(IPayloadResponseType.ONVERDICT_REQUEST, (response) => {
+
+                        const payload : IPayloadInterface<string> = response.payload;
+
+                        setRequests( prev =>  prev.filter( req =>  req.public_id !== payload.data!  ) );
+
+                        showToast(payload.log_message) ;
+                    });
+
+                    socket.on(IPayloadResponseType.ONCREATE_CONTACT, (response) => {
+                        const payload : IPayloadInterface<IRoomPublic> = response.payload;
+
+                            setRooms( (prev) => [payload.data!, ...prev] );
+
+                    });
+
+
+
+                socket.on("connect", () => {
+                    console.log("client connected");
+
+                    socket.emit("message", {type : IPayloadRequestType.DELIVER_RECEIVED_MESSAGES});
+
+                    const request_payload1 = {
+                        type : IPayloadRequestType.LOAD_ROOMS,
+                        payload : {
+                            cursor : null,
+                        },
+                    };
+
+                    socket.emit("message", request_payload1);
+                    
+                    const request_payload2 = {
+                        type : IPayloadRequestType.LOAD_REQUESTS,
+                        payload : {
+                            cursor : null,
+                        },
+                    };
+                    
+                    socket.emit("message", request_payload2);
+
+ 
+                });
+
+
+                socket.on("disconnect", () => {
+                    console.log("client has disconnected");
+                });
+
+                socket.on("error", (reason) => {
+                    console.log(reason);
+                })
+
+        } else {
+            navigate("/");
         }
 
+
+    };
+    
+    verifySession();
+
+    return () => {
+            if (socket_ref.current) {
+                appStart.current = false;
+                socket_ref.current.removeAllListeners(); 
+                socket_ref.current.disconnect();
+                socket_ref.current = null;
+            }
+        };
+    
+}, [username]);
+
+
+
+    useEffect(() => {
+        if (!socket_ref.current?.connected || !activeRoomSetup)
+            return;
+
+        setMessages([]);
+        setHasMoreMessages(true);
+        messages_cursor.current = null;
+        
+        activeRoomRef.current = activeRoomSetup;
+        // might add later ... messageEnd_anchor.current?.scrollIntoView( {behavior : "smooth"} );
+
         const request_payload = {
-            type : payload_type,
+            type : IPayloadRequestType.LOAD_MESSAGES,
             payload : {
-                cursor : tab_cursor,
+                room_public_id : activeRoomSetup.public_id,
+                cursor : messages_cursor.current,
             },
         };
+        socket_ref.current.emit("message", request_payload);
 
-        conn_soc.current!.emit("message", request_payload);
+    }, [activeRoomSetup]);
 
+    useEffect(() => {
+        const scrollToLatest = () => {
+            const parentContainer = messageEnd_anchor.current?.parentElement;
+            if (parentContainer)
+            {
+                const atBottom = parentContainer.scrollHeight - parentContainer.scrollTop <= parentContainer.clientHeight;
+                if (atBottom)
+                {
+                    messageEnd_anchor.current?.scrollIntoView( {behavior : "smooth"} );
+                }
+            }
+        };
 
-    }, [status, activeTab, conn_soc.current]);
+        scrollToLatest();
+
+    }, [messages]);
 
 
     if (status === "loading") {
@@ -362,7 +519,7 @@ export default function Home() {
                                                                             }
                                                                         } 
 
-                                                                        conn_soc.current?.emit("message", request_payload);
+                                                                        socket_ref.current?.emit("message", request_payload);
                                                                     }}
                                                                     className="btn-small btn-primary"
                                                                     style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
@@ -379,7 +536,7 @@ export default function Home() {
                                                                                 verdict : false,
                                                                             }
                                                                         } 
-                                                                        conn_soc.current?.emit("message", request_payload);
+                                                                        socket_ref.current?.emit("message", request_payload);
                                                                     }}
                                                                     className="btn-small"
                                                                     style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "transparent" }}
@@ -431,7 +588,7 @@ export default function Home() {
                                                         }}
                                                         onClick={() => {
                                                             // Logic to select the active room will go here later
-                                                            setRoomSetup(room);
+                                                            setActiveRoomSetup(room);
 
 
                                                         }}
@@ -505,10 +662,10 @@ export default function Home() {
 
                                     if (response.success)
                                     {
-                                        if (conn_soc.current)
+                                        if (socket_ref.current)
                                         {
-                                            conn_soc.current.disconnect();
-                                            conn_soc.current = null;
+                                            socket_ref.current.disconnect();
+                                            socket_ref.current = null;
                                         }
                                         
                                         navigate("/");
@@ -530,13 +687,13 @@ export default function Home() {
                 <main className="chat-main">
                     {/* Header */}
                     <header className="chat-header">
-                        <div className="chat-avatar" id="active-chat-avatar">{roomSetup ? 
+                        <div className="chat-avatar" id="active-chat-avatar">{activeRoomSetup ? 
                          (<>
                             <div className="room-avatar" style={{
                                 width: "100%",
                                 height: "100%",
                                 borderRadius: "50%",
-                                backgroundColor: roomSetup.type === "group" ? "var(--secondary)" : "var(--primary)",
+                                backgroundColor: activeRoomSetup.type === "group" ? "var(--secondary)" : "var(--primary)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -545,18 +702,18 @@ export default function Home() {
                                 fontWeight: "bold",
                                 flexShrink: 0
                             }}>
-                                {roomSetup.room_name.charAt(0).toUpperCase()}
+                                {activeRoomSetup.room_name.charAt(0).toUpperCase()}
                             </div>
                          </>) : "S"}</div>
                         <div className="chat-meta">
-                            <h2 className="chat-name" id="active-chat-name">{roomSetup ? roomSetup.room_name : "Select a Chat"}</h2>
+                            <h2 className="chat-name" id="active-chat-name">{activeRoomSetup ? activeRoomSetup.room_name : "Select a Chat"}</h2>
                             <p className="chat-preview" style={{ color: "var(--primary)" }}>Secure E2EE Channel</p>
                         </div>
                         
                         <div style={{ display: "flex", gap: "8px", position: "relative" }}>
                             <button className="icon-btn" id="chat-options-btn" aria-label="Menu" title="Menu" 
                             onClick={ () => { setRoomSettingsMenu(!roomSettingsMenu) } }
-                            style={{ display: roomSetup ? "flex" : "none" }}>
+                            style={{ display: activeRoomSetup ? "flex" : "none" }}>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="12" cy="5" r="1.5" />
                                     <circle cx="12" cy="12" r="1.5" />
@@ -575,34 +732,95 @@ export default function Home() {
                     </header>
 
                     {/* Messages */}
-                    <div className="messages-area" id="messages-area">
-                        {/* Empty state initially */}
-                        {
-                        roomSetup ? (                        
-                            <div style={{ margin: "auto", textAlign: "center", color: "var(--text-muted)" }}>
-                                {/* Room background */}
-                            </div>
-                        ) : 
-                        (
-                            <div style={{ margin: "auto", textAlign: "center", color: "var(--text-muted)" }}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: "48px", height: "48px", marginBottom: "16px", opacity: 0.5 }}>
-                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                                </svg>
-                                <p data-i18n="empty_state">End-to-end encrypted messaging.</p>
-                            </div>
-                        )
-                        }
+                   <div className="messages-area" id="messages-area">
+                        {activeRoomSetup ? (
+                            <>                  
+                                {/* Removed the inline margin: auto and text-align: center */}
+                                <div className="messages-list">
+                                    {messages.length === 0 ? (
+                                        <div className="empty-state-text">
+                                            No messages here yet. Start the conversation!
+                                        </div>
+                                    ) : (
+                                        messages.map((msg) => {
+                                            const isMe = msg.username === userState!.username;
+                                            const timeString = new Date(msg.created_at).toLocaleTimeString([], { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit'
+                                            });
 
+                                            return (
+                                                <div key={msg.public_id} className={`message-row ${isMe ? "own-message" : ""}`}>
+                                                    
+                                                    {/* AVATAR - Only show for the other person */}
+                                                    {!isMe && (
+                                                        <div className="message-avatar">
+                                                            {msg.nickname.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+
+                                                    {/* BUBBLE & TIME STACK */}
+                                                    <div className="message-content-wrapper">
+                                                        <div className="message-bubble">
+                                                            {/* The Decrypted Content */}
+                                                            <div className="message-text">{msg.content}</div>
+                                                            
+                                                            {/* STATUS DOTS (Bottom Right) */}
+                                                            <div className="message-bubble-footer">
+                                                                <div className="status-indicators">
+                                                                    <div className={`status-dot ${msg.is_sent ? 'active' : ''}`}></div>
+                                                                    <div className={`status-dot ${msg.is_delivered ? 'active' : ''}`}></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* TIMESTAMP */}
+                                                        <span className="message-time">
+                                                            {timeString}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                    {/* Scroll Anchor */}
+                                    <div ref={messageEnd_anchor}></div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="no-room-selected" style={ {display : "flex", width : "100%", height : "100%", justifyContent : "center", alignItems : "center", color : " var(--text-muted)", opacity : 0.5} }>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: "48px", height: "48px", marginBottom: "16px"}}>
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                    </svg>
+                                    <p data-i18n="empty_state">End-to-end encrypted messaging.</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Input Box */}
                     <form className="chat-input-area" id="message-form" 
-                    onSubmit={ (e) => {
+                    onSubmit={ async (e) => {
                         e.preventDefault();
+                        setMsgInput("");
+
+                        const crypto_key = await initKey(activeRoomSetup!.enc_key);
+                        const result = await msgEncrytion(msgInput, crypto_key);
+
+                        const request_payload = {
+                            type : IPayloadRequestType.SEND_MESSAGE,
+                            payload : {
+                                room_public_id : activeRoomSetup!.public_id,
+                                msg_content : result.encrypted_text,
+                                iv : result.iv,
+                            },
+                        };
+
+                        socket_ref.current!.emit("message", request_payload);
                     } }
-                    style={{ display: roomSetup ? "flex" : "none" }}>
-                        <input type="text" id="message-input" placeholder="Type a secure message..." autoComplete="off" />
-                        <button type="submit" style={{ background: "var(--primary)", color: "white", border: "none", borderRadius: "50%", width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", transition: "all 0.2s" }} aria-label="Send">
+                    style={{ display: activeRoomSetup ? "flex" : "none" }}>
+                        <input type="text" id="message-input" placeholder="Type a secure message..." value= {msgInput} onChange= {(e) => {setMsgInput(e.target.value)}} autoComplete="off" />
+                        <button className= "btn-primary" type="submit" disabled = {!msgInput}
+                        style={{ padding : "0%" ,background: "var(--primary)", color: "white", border: "none", borderRadius: "50%", width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }} aria-label="Send">
                             <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: "20px", height: "20px", marginLeft: "2px" }}>
                                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
@@ -629,8 +847,26 @@ export default function Home() {
                     {/* Profile Overview */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "16px", borderBottom: "1px solid var(--border)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                            <button id="edit-avatar-btn" style={{ border: "none", background: "transparent", cursor: "pointer", position: "relative", borderRadius: "50%" }}>
-                                <div className="chat-avatar" id="settings-avatar" style={{ width: "56px", height: "56px", fontSize: "1.5rem" }}>S</div>
+                            <button id="edit-avatar-btn" 
+                            onClick={ () => { /* change user avatar */} }
+                            style={{ border: "none", background: "transparent", cursor: "pointer", position: "relative", borderRadius: "50%" }}>
+                                <div className="chat-avatar" id="settings-avatar" style={{ width: "56px", height: "56px", fontSize: "1.5rem" }}>{
+                                    (<>
+                                        <div className="request-avatar" style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            borderRadius: "50%",
+                                            backgroundColor: "var(--primary)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            color: "white",
+                                            fontSize: "0.8rem"
+                                        }}>
+                                            {userState!.nickname.charAt(0).toUpperCase()}
+                                        </div>
+                                    </>)
+                                    }</div>
                                 <div style={{ position: "absolute", bottom: 0, right: "-4px", background: "var(--surface)", borderRadius: "50%", padding: "4px", boxShadow: "var(--shadow)" }}>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{ width: "14px", height: "14px" }}>
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -640,15 +876,17 @@ export default function Home() {
                             </button>
                             <div>
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                    <h3 id="settings-name" style={{ fontSize: "1.1rem", marginBottom: "4px" }}>User</h3>
-                                    <button id="edit-name-btn" className="icon-btn" style={{ width: "24px", height: "24px" }}>
+                                    <h3 id="settings-name" style={{ fontSize: "1.1rem", marginBottom: "4px" }}>{userState!.nickname}</h3>
+                                    <button id="edit-name-btn" className="icon-btn" 
+                                    onClick={ () => { /* change user nickname */} }
+                                    style={{ width: "24px", height: "24px" }}>
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "14px", height: "14px" }}>
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
                                     </button>
                                 </div>
-                                <p id="settings-username" style={{ color: "var(--text-sub)", fontSize: "0.9rem" }}>@username</p>
+                                <p id="settings-username" style={{ color: "var(--text-sub)", fontSize: "0.9rem" }}>@{userState!.username}</p>
                             </div>
                         </div>
                     </div>
@@ -750,7 +988,7 @@ export default function Home() {
                                 },
                             };
 
-                            conn_soc.current?.emit("message", request_payload);
+                            socket_ref.current?.emit("message", request_payload);
                         } }>
 
                             <div className="input-group" style={{ marginBottom: "24px" }}>
