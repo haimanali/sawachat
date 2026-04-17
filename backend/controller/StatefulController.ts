@@ -46,8 +46,6 @@ export class StatefulController{
 
     public async broadcastMessage(type : string, room_id : number, init_wsSession : wsSession, payload : any) : Promise<void>
     {
-        
-
         this.active_rooms.get(room_id)?.forEach( (user_id) => {
             this.active_clients.get(user_id)?.forEach( (other_wsSession) => {
                 if (other_wsSession === init_wsSession) return;
@@ -55,6 +53,23 @@ export class StatefulController{
             });
 
         });
+    }
+
+    public removeRoomMember(room_id : number, user_id : number)
+    {
+        const roomMembers = this.active_rooms.get(room_id);
+
+        if (roomMembers)
+        {
+            roomMembers.delete(user_id);
+
+            if (roomMembers.size === 0)
+                this.active_rooms.delete(room_id);
+
+
+        }
+        
+        this.client_room.get(user_id)?.delete(room_id);
     }
 
     public setRoomMember(room_id : number, user_id : number) : void
@@ -89,8 +104,8 @@ export class StatefulController{
     //connection manager
     private active_clients = new Map<number, Set<wsSession>>();
     
-    public active_rooms = new Map<number, Set<number>>();
-    private client_room = new Map<number, Set<number>>(); //for client disconnection optimization...
+    public active_rooms = new Map<number, Set<number>>(); //room -> set(users)
+    private client_room = new Map<number, Set<number>>(); // users -> set(rooms) for client disconnection optimization...
 
     
     //ws manager
@@ -148,7 +163,8 @@ export class StatefulController{
         {
             await conn.rollback();
             console.log(error.message);
-            wsSession.write("onerror", { log_message :  "Server down"});
+            
+            this.clientDisconnect(wsSession.client.user_id, wsSession);
         }
         finally
         {

@@ -1,35 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiCall } from './assets/apiCaller';
+import { apiCall } from '../../services/apiCaller';
+import { useApp } from '../../hooks/useApp';
 
-
-const ip = "http://localhost:3000/api/auth/session";
 
 
 export default function Index() {
-  const navigate = useNavigate();
-  const [status, setStatus] = useState<'loading' | 'authorized'>("loading");  
+  const { userState, navigate } = useApp();
 
-useEffect(() => {
-    const checkSession = async () => {
+    useEffect(() => {
+      
+      if (userState)
+        navigate(`/u/${userState.username}`, { replace : true } );
 
-      const response = await apiCall(ip, 'GET');
+    }, [userState]);
 
-        if (response.success) {
-          setStatus("authorized");
-          navigate(`/u/${response.data.username}`);
-        }
-    };
-    checkSession();
-  }, []);
-
-  if (status === "loading")
-    return (<>
-      <div>
-        loading...
-      </div>
-    </>);
-
+    if (userState)
+      return null;
 
   return (
     <>

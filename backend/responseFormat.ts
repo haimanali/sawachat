@@ -5,7 +5,11 @@ export enum IPayloadResponseType
     ONMESSAGE_RECEIVED = "onmessage_received",
 
     ONVERDICT_REQUEST = "onverdict_request_create_room",
+    ONVERDICT_REJOIN = "onverdict_rejoin",
     ONCREATE_CONTACT = "oncreate_contact",
+    ONDELETE_CONTACT = "ondelete_contact",
+    ONDEACTIVATE_CONTACT = "ondeactivate_contact",
+    ONACTIVATE_CONTACT = "onactivate_contact",
 
     ONSEND_REQUEST = "onsend_request",
     ONRECEIVE_REQUEST = "onreceive_request",
@@ -13,6 +17,9 @@ export enum IPayloadResponseType
     ONLOAD_MESSAGES = "onload_messages",
     ONLOAD_REQUESTS = "onload_requests",
     ONLOAD_ROOMS = "onload_rooms",
+
+    ONREJOIN_REQUEST = "onrejoin_request",
+    ONRECEIVE_REJOIN = "onreceive_rejoin",
 }
 
 export interface IPayloadInterface<T = void>

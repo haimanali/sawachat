@@ -4,6 +4,7 @@ import { v4 } from 'uuid';
 import { IServiceLayerResponse } from "../../responseFormat.js";
 import { IRoom } from "../../domain/IRoom.js";
 import crypto from "crypto";
+import { IClient } from "../../domain/IClient.js";
 
 
 export class RoomService implements IRoomService
@@ -73,5 +74,33 @@ export class RoomService implements IRoomService
             data : r_result.data,
             log_message : "fetched 10 user rooms",
         };
+    }
+
+    public async performLeaveContact(room_id: number, user_id : number): Promise<IServiceLayerResponse<IClient []>> {
+        
+        const remove_result = await this.repository.Iroom_repo.setRoomMemberActivity(false, room_id, user_id);
+        const check_result = await this.repository.Iroom_repo.checkRoomActive(room_id);
+        const member_result = await this.repository.Iroom_repo.getRoomMembers(room_id);
+
+        if (!check_result.success)
+        {
+            const detete = await this.repository.Iroom_repo.deleteRoomRecord(room_id);
+
+            return {
+                success : check_result.success,
+                data : member_result.data,
+                log_message : detete.log_message,
+            };
+        }
+
+        return {
+            success : remove_result.success,
+            log_message : remove_result.log_message,
+        };
+    }
+
+    public async performActivateContact(user_id: number, room_id: number): Promise<IServiceLayerResponse> {
+        const r_result = await this.repository.Iroom_repo.setRoomMemberActivity(true, room_id, user_id);
+        return {success : r_result.success, log_message : r_result.log_message};
     }
 }

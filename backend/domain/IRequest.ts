@@ -1,8 +1,7 @@
-export interface IRequest
+import { IRequestPublic } from "../public/IRequestPublic.js";
+
+export interface IRequest extends IRequestPublic
 {
-    request_id : number,
-    public_id : string,
-    username : string,
-    nickname : string,
-    created_at : Date,
+    readonly request_id : number,
+    readonly room_id? : number,
 }

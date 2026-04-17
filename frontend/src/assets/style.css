@@ -385,6 +385,36 @@ body {
     flex-shrink: 0;
 }
 
+/* Add this to your CSS */
+
+.chat-loader-container {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+/* Ensure the spinner is visible when this is rendered */
+.chat-loader-container .btn-spinner {
+    display: block; 
+}
+
+.full-page-loader {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-main); 
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+}
+
 .is-loading .btn-spinner {
     display: block;
 }
@@ -396,6 +426,7 @@ body {
 .is-loading {
     pointer-events: none;
 }
+
 
 @keyframes spin {
     to {
@@ -1555,8 +1586,8 @@ a.btn-back {
 /* Footer area inside the bubble for the dots */
 .message-bubble-footer {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 4px;
+    justify-content: left;
+    margin-top: 6px;
 }
 
 /* The Dots Container */

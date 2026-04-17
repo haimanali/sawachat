@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { apiCall } from "./assets/apiCaller"; // Ensure the path is correct based on your folder structure
+import { apiCall } from "../../../services/apiCaller"; // Ensure the path is correct based on your folder structure
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../../../hooks/useApp";
 
 const API_URL = "http://localhost:3000/api/signup";
 
@@ -23,6 +24,8 @@ export default function Signup() {
   const [toastMsg, setToastMsg] = useState("");
 
   const navigate = useNavigate();
+  const { setUserState } = useApp();
+  
 
   // ── Helpers ────────────────────────────────────────
   const showToast = (msg: string, ms = 2800) => {
@@ -85,6 +88,7 @@ export default function Signup() {
       setStep("success");
       // Optional: Redirect after a few seconds
       setTimeout(() => {
+        setUserState(result.data);
         navigate(`/u/${result.data.username}`);
       }, 2000);
     } else {

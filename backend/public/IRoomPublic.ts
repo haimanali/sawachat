@@ -6,4 +6,5 @@ export interface IRoomPublic
     room_subname : string,
     created_at : Date,
     type : "private" | "group",
+    is_active : boolean,
 }

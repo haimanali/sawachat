@@ -4,6 +4,7 @@ import { IRepositoryLayerResponse } from "../../responseFormat.js";
 
 export interface IClientRepository
 {
+    extendSessionByUserID(user_id: number): Promise<IRepositoryLayerResponse>;
     getClientBySessionID(session_id : string) : Promise<IRepositoryLayerResponse<IClient>>;
     checkClientExist(username : string) : Promise<IRepositoryLayerResponse<IClient>>;
     removeClientSession(session_id : string) : Promise<IRepositoryLayerResponse>;

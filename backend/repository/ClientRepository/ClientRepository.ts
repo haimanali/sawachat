@@ -50,6 +50,20 @@ export class ClientRepository implements IClientRepository
         };
     }
 
+    public async extendSessionByUserID(user_id: number): Promise<IRepositoryLayerResponse> {
+        const MAX_AGE = 1000 * 60 * 60 * 24 * 14;
+        const sql = "update Session set expire = DATE_ADD(NOW(), INTERVAL 3 HOUR) where user_id ? and expire < ?";
+        const result = await this.db_conn.executeUpdate(sql, [user_id , MAX_AGE]);
+
+        if (result.affectedRows <= 0)
+            throw Error("session doesn't exist");
+
+        return {
+            success : true,
+            log_message : "session extended",
+        };
+    }
+
     public async getClientBySessionID(session_id: string): Promise<IRepositoryLayerResponse<IClient>> {
         const sql = 
         "select u.user_id, u.username, u.nickname, u.hash_pass from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW()";

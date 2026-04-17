@@ -1,9 +1,6 @@
-export interface IRequestRecord
+import { IRequest } from "../domain/IRequest.js";
+
+export interface IRequestRecord extends IRequest
 {
-    request_id : number,
-    public_id : string,
-    sender_id : number, 
-    receiver_id : number,
-    status : string,
-    created_at : Date,
+
 }

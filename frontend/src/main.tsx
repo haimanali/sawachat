@@ -1,27 +1,37 @@
 import React, { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Signup from "./signup"
-import Login from "./login";
-import Index from "./index"
-import Error from "./error"
-import Home from "./home"
+import Signup from "./features/auth/signup/signup"
+import Login from "./features/auth/login/login"
+import Index from "./features/index/index"
+import Error from "./features/error/error"
+import Home from "./features/home/home"
 import "./assets/style.css"
+import { AppProvider } from './hooks/useApp';
+import { ProtectedProvider } from './hooks/useProtected';
 
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/u/:username" element={ <Home />}/>
-        <Route path="/error" element={<Error  />} />
+      <AppProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/u/:username" element={
+
+            <ProtectedProvider>
+              <Home />
+            </ProtectedProvider>
+
+          } />
+          <Route path="/error" element={<Error />} />
 
 
-        <Route path="*" element={<Error />} /> 
-      </Routes>
+          <Route path="*" element={<Error />} />
+        </Routes>
+      </AppProvider>
     </BrowserRouter>
   );
 }

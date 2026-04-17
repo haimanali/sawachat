@@ -1,8 +1,11 @@
+import { IClient } from "../../domain/IClient.js";
 import { IRoom } from "../../domain/IRoom.js";
 import { IServiceLayerResponse } from "../../responseFormat.js";
 
 export interface IRoomService
 {
+    performActivateContact(user_id: number, room_id: number): Promise<IServiceLayerResponse>;
+    performLeaveContact(room_id: number, user_id : number): Promise<IServiceLayerResponse<IClient []>>;
     generateRoomkey() : string;
     generatePublicID() : string;
     performGetRoom(public_id : string) : Promise<IServiceLayerResponse<IRoom>>;

@@ -11,6 +11,10 @@ import { IAppLayerResponse } from "../responseFormat.js";
 
 export interface IApiApplication
 {
+    extendSession(user_id: number): Promise<IAppLayerResponse>;
+    acceptRejoinRequest(req_public_id: string, username: string, my_user_id : number, request_verdict : boolean): Promise<IAppLayerResponse<IRoomPublic, {other_userid : number, room_id : number}>>;
+    sendRejoinRequest(room_public_id: string, username: string, s_client : IClient): Promise<IAppLayerResponse<IRequestPublic, number>>;
+    deleteContact(room_public_id : string, username : string) : Promise<IAppLayerResponse<void, {room_id : number, is_active: boolean}>>;
     deliverAllRecievedMessages(client : IClient) : Promise<IAppLayerResponse<void, IMessage[]>>
     deliverUserMessage(msg_public_id: string, room_public_id : string, s_username : string, is_delivered: boolean): Promise<IAppLayerResponse<void, number>>;
     authenticateBySessionID(session_id : string) : Promise<IAppLayerResponse<IClientPublic, IClient>>;

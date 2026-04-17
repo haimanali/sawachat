@@ -29,6 +29,12 @@ export class ApiApplication implements IApiApplication
         this.services = services;
     }
 
+
+    public async extendSession(user_id: number): Promise<IAppLayerResponse> {
+        const result = await this.services.Isession_service.performExtendSession(user_id);
+        return result;
+    }
+
     public async authenticateBySessionID(session_id : string): Promise<IAppLayerResponse<IClientPublic, IClient>> {
         const result = await this.services.Isession_service.performVerifySession(session_id);
         if (!result.data)
@@ -43,7 +49,7 @@ export class ApiApplication implements IApiApplication
             },
             log_message : result.log_message,
 
-            internal : result.data as IClient,
+            internal : result.data,
         };
     }
 
@@ -143,8 +149,8 @@ export class ApiApplication implements IApiApplication
                 success : s_result.success,
                 log_message : s_result.log_message,
             };
-        
-        const c_result  = await this.services.Icontact_service.performSendRequest(s_result.data!.user_id, s_client.user_id);
+        const public_id = this.services.Icontact_service.generatePublicID();
+        const c_result  = await this.services.Icontact_service.performSendRequest(public_id, s_result.data!.user_id, s_client.user_id);
 
         if (!c_result.success)
             return {
@@ -159,6 +165,7 @@ export class ApiApplication implements IApiApplication
                 username : s_client.username,
                 nickname : s_client.nickname,
                 created_at : c_result.data!.created_at,
+                type : c_result.data!.type,
             },
             log_message : c_result.log_message,
 
@@ -201,6 +208,7 @@ export class ApiApplication implements IApiApplication
             room_subname : s_client.username,
             type : "private",
             created_at : r_result.data!.created_at,
+            is_active : true,
         };
         const contact_B : IRoomPublic = 
         {
@@ -210,6 +218,7 @@ export class ApiApplication implements IApiApplication
             room_subname : r_client.username,
             type : "private",
             created_at : r_result.data!.created_at,
+            is_active : true,
         };
 
         await this.services.Iroom_service.performAddMembers([r_client.user_id, s_client.user_id], r_result.data!.room_id);
@@ -294,6 +303,7 @@ export class ApiApplication implements IApiApplication
                     username : request.username,
                     nickname : request.nickname,
                     created_at : request.created_at,
+                    type : request.type,
                 }
             );
         });
@@ -355,4 +365,129 @@ export class ApiApplication implements IApiApplication
 
     }
     
+
+    public async deleteContact(room_public_id: string, username : string): Promise<IAppLayerResponse<void, {room_id : number, is_active: boolean}>> {
+        const client = await this.services.Isession_service.performVerifyUsername(username);
+        if (!client.success)
+            return {
+                success : client.success,
+                log_message : client.log_message,
+            };
+
+
+        const room = await this.services.Iroom_service.performGetRoom(room_public_id);
+        if (!room.success)
+            return {
+                success : room.success,
+                log_message : room.log_message,
+            };
+        
+        const r_result = await this.services.Iroom_service.performLeaveContact(room.data!.room_id, client.data!.user_id);
+        const reactive_resut = await this.services.Icontact_service.performRemoveReactive(room.data!.room_id);
+        
+        if (!r_result.success)
+        {
+            const  [ user1 , user2 ] = r_result.data!; 
+
+            const requestrm_result = await this.services.Icontact_service.performRemoveRequest(user1.user_id, user2.user_id, "contact") 
+            const contactrm_result = await this.services.Icontact_service.performRemoveContact(user1.user_id, user2.user_id);
+        }
+
+        return {
+            success : true,
+            log_message : r_result.log_message,
+            internal : {
+                room_id : room.data!.room_id,
+                is_active : r_result.success,
+            },
+        };
+    }
+
+    public async sendRejoinRequest(room_public_id: string, username: string, s_client : IClient): Promise<IAppLayerResponse<IRequestPublic, number>> {
+        const client = await this.services.Isession_service.performVerifyUsername(username);
+        if (!client.success)
+            return {
+                success : client.success,
+                log_message : client.log_message,
+            };
+
+        const room = await this.services.Iroom_service.performGetRoom(room_public_id);
+        if (!room.success)
+            return {
+                success : room.success,
+                log_message : room.log_message,
+            };
+
+        const public_id = this.services.Icontact_service.generatePublicID();
+        const result = await this.services.Icontact_service.performSendRejoin(public_id, room.data!.room_id, client.data!.user_id);
+        if (!result.success)
+            return {
+                success : result.success,
+                log_message : result.log_message,
+            };
+
+        const request_public : IRequestPublic = {
+            username : result.data!.request.username,
+            public_id : result.data!.request.public_id,
+            nickname : result.data!.request.nickname,
+            created_at : result.data!.request.created_at,
+            type : result.data!.request.type,
+        };
+        
+        return {
+            success : true,
+            data : request_public,
+            log_message : result.log_message,
+            internal : result.data!.other_client,
+        };
+
+    }
+
+    public async acceptRejoinRequest(req_public_id: string, username: string, my_user_id : number, request_verdict : boolean): Promise<IAppLayerResponse<IRoomPublic, {other_userid : number, room_id : number}>> {
+        const client = await this.services.Isession_service.performVerifyUsername(username);
+        if (!client.success)
+            return {
+                success : client.success,
+                log_message : client.log_message,
+            };
+            
+        const request = await this.services.Icontact_service.performGetRequest(req_public_id);
+        if (!request.success)
+            return {
+                success : request.success,
+                log_message : request.log_message,
+            };
+
+        const result = await this.services.Icontact_service.performVerdictRejoin(request.data!, request_verdict);
+        if (!result.success)
+            return {
+                success : result.success,
+                log_message : result.log_message,
+            };
+        
+        const r_result = await this.services.Iroom_service.performActivateContact(my_user_id, result.data!.room_id);
+
+        const room_public : IRoomPublic = {
+            public_id : result.data!.public_id,
+            enc_key : result.data!.enc_key,
+            room_name :client.data!.nickname,
+            room_subname :client.data!.username,
+            created_at : result.data!.created_at,
+            is_active : r_result.success,
+            type : result.data!.type,            
+        };
+
+        return {
+            success : result.success,
+            data : room_public,
+            log_message : result.log_message,
+            internal : {
+                other_userid : client.data!.user_id,
+                room_id : result.data!.room_id,
+            },
+        };
+        
+    }
+
+
 }

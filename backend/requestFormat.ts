@@ -6,10 +6,13 @@ export enum IPayloadRequestType
     SEND_MESSAGE = "send_message",
     SEND_REQUEST = "send_request",
     VERDICT_REQUEST = "verdict_request_create_room",
+    VERDICT_REJOIN = "verdict_rejoin",
     LOAD_ROOMS = "load_rooms",
     LOAD_REQUESTS = "load_requests",
     LOAD_MESSAGES =  "load_messages",
     DELIVER_RECEIVED_MESSAGES = "deliver_received_messages",
+    DELETE_CONTACT = "delete_contact",
+    REJOIN_REQUEST = "rejoin_request",
     LIMIT = 10,
 }
 
@@ -98,6 +101,34 @@ const message_received = z.object({
     }),
 });
 
+const leave_room = z.object({
+    type : z.literal(IPayloadRequestType.DELETE_CONTACT),
+    payload : z.object({
+        room_public_id : z.string().max(36),
+        username : z.string().min(2).max(16),
+    }),
+});
+
+
+const rejoin_request = z.object({
+    type : z.literal(IPayloadRequestType.REJOIN_REQUEST),
+    payload : z.object({
+        room_public_id : z.string().max(36),
+        username : z.string().min(2).max(16),
+    }),
+
+});
+
+const verdict_rejoin = z.object({
+    type : z.literal(IPayloadRequestType.VERDICT_REJOIN),
+    payload : z.object({
+        req_public_id : z.string().max(36),
+        username : z.string().min(2).max(16),
+        verdict : z.boolean(),
+    }),
+});
+
+
 export const action_schema = z.discriminatedUnion("type", [
     load_messages,
     load_rooms,
@@ -106,7 +137,10 @@ export const action_schema = z.discriminatedUnion("type", [
     message_received,
     send_request_schema,
     verdict_req_schema,
-    deliver_received_messages
+    leave_room,
+    rejoin_request,
+    deliver_received_messages,
+    verdict_rejoin,
 ]);
 
 export type IActionRequest = z.infer<typeof action_schema>;

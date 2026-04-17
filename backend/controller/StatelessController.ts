@@ -127,7 +127,16 @@ export class StatelessController {
                     return;
                 }
 
-            const payload = await this.Iapp_layer.authenticateByUsername(req.params.username as string);
+            const payload = await this.Iapp_layer.authenticateBySessionID(session_id);
+
+            if (payload.data!.username !== req.params.username)
+            {
+                res.status(400).json({
+                    success : false,
+                    log_message : "username doesn't match current session",
+                });
+                return;
+            }
 
             res.status(200).json( {
                 success : payload.success,

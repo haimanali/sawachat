@@ -34,6 +34,11 @@ export class SessionService implements ISessionService
         };
     }
 
+    public async performExtendSession(user_id: number): Promise<IServiceLayerResponse> {
+        const result = await this.repository.Iclient_repo.extendSessionByUserID(user_id);
+        return result;
+    }
+
     public async performVerifySession(session_id : string) : Promise<IServiceLayerResponse<IClient>>
     {
         const cl_result = await this.repository.Iclient_repo.getClientBySessionID(session_id);

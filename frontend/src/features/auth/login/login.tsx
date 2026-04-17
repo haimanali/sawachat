@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { apiCall } from "./assets/apiCaller"; // Ensure the path is correct
+import { apiCall } from "../../../services/apiCaller"; // Ensure the path is correct
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../../../hooks/useApp";
 
 const API_URL = "http://localhost:3000/api/login";
 
 export default function Login() {
-  // ── State ──────────────────────────────────────────
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [autoLogin, setAutoLogin] = useState(false);
 
-  // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -19,8 +18,8 @@ export default function Login() {
   const [isShaking, setIsShaking] = useState(false);
 
   const navigate = useNavigate();
+  const { setUserState } = useApp();
 
-  // ── Initialization (Runs once when page loads) ───────
   useEffect(() => {
     const h = new Date().getHours();
     if (h < 5) setGreeting("Good Night 🌙");
@@ -36,9 +35,9 @@ export default function Login() {
   };
 
   const triggerShake = () => {
-    setIsShaking(false); // Reset animation
-    setTimeout(() => setIsShaking(true), 10); // Trigger reflow and start shake
-    setTimeout(() => setIsShaking(false), 420); // Stop after 0.42s
+    setIsShaking(false); 
+    setTimeout(() => setIsShaking(true), 10); 
+    setTimeout(() => setIsShaking(false), 420); 
   };
 
   // ── Handlers ───────────────────────────────────────
@@ -47,11 +46,9 @@ export default function Login() {
 
     const cleanUsername = username.trim();
 
-    // Basic client-side validation
     if (!cleanUsername) return showToast("❌ Please enter your User ID");
     if (!password) return showToast("❌ Please enter your password");
 
-    // Hide previous error, show loading
     setErrorMsg("");
     setIsLoading(true);
 
@@ -62,9 +59,9 @@ export default function Login() {
     });
 
     if (result.success) {
-      showToast(`✅ Welcome back, ${result.nickname}!`);
-      // Redirect to chat after short delay
+      showToast(`✅ Welcome back, ${result.data.nickname}!`);
       setTimeout(() => {
+        setUserState(result.data);
         navigate(`/u/${result.data.username}`);
       }, 1000);
     } else {
@@ -75,7 +72,6 @@ export default function Login() {
 
   };
 
-  // ── Render (HTML/JSX) ──────────────────────────────
   return (
     <>
       <div className="bg-layer" aria-hidden="true">
