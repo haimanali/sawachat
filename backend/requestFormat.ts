@@ -1,18 +1,27 @@
 import { z } from 'zod'
+import { ENotificationType } from './notificationFormat.js';
 
 export enum IPayloadRequestType
 {
+    EXTEND_SESSION = "extend_session",
+    ONLINE_STATUS = "online_status",
+
     MESSAGE_RECEIVED = "message_received",
     SEND_MESSAGE = "send_message",
+    UPDATE_LAST_READ = "update_last_read",
     SEND_REQUEST = "send_request",
     VERDICT_REQUEST = "verdict_request_create_room",
     VERDICT_REJOIN = "verdict_rejoin",
     LOAD_ROOMS = "load_rooms",
     LOAD_REQUESTS = "load_requests",
     LOAD_MESSAGES =  "load_messages",
+    LOAD_NOTIFICATIONS = "load_notifications",
+    LOAD_CONTACTS = "load_contacts",
     DELIVER_RECEIVED_MESSAGES = "deliver_received_messages",
     DELETE_CONTACT = "delete_contact",
     REJOIN_REQUEST = "rejoin_request",
+    MARK_NOTIF_READ = "mark_notif_read",
+    BULK_NOTIF_READ = "bulk_notif_read",
     LIMIT = 10,
 }
 
@@ -38,9 +47,6 @@ export type ISignUpRequest = z.infer<typeof signup_schema>;
 //stateful schema
 const load_requests = z.object({
     type : z.literal(IPayloadRequestType.LOAD_REQUESTS),
-    payload : z.object({
-        cursor : z.coerce.date().nullable(),
-    }),
 });
 
 const load_rooms = z.object({
@@ -128,6 +134,34 @@ const verdict_rejoin = z.object({
     }),
 });
 
+const load_notifications = z.object({
+    type : z.literal(IPayloadRequestType.LOAD_NOTIFICATIONS),
+});
+
+const load_contacts = z.object({
+    type : z.literal(IPayloadRequestType.LOAD_CONTACTS),
+});
+
+const mark_notif_read = z.object( {
+    type : z.literal(IPayloadRequestType.MARK_NOTIF_READ),
+    payload : z.object( {
+        notif_public_id : z.string().max(36),
+    }),
+} ); 
+
+const bulk_notif_read = z.object({
+    type : z.literal(IPayloadRequestType.BULK_NOTIF_READ),
+    payload : z.object({
+        type : z.enum(ENotificationType),
+    }),
+});
+
+const update_last_read = z.object({
+    type : z.literal(IPayloadRequestType.UPDATE_LAST_READ),
+    payload : z.object({
+        room_public_id : z.string().max(36),
+    }),
+});
 
 export const action_schema = z.discriminatedUnion("type", [
     load_messages,
@@ -141,6 +175,11 @@ export const action_schema = z.discriminatedUnion("type", [
     rejoin_request,
     deliver_received_messages,
     verdict_rejoin,
+    load_notifications,
+    load_contacts,
+    mark_notif_read,
+    bulk_notif_read,
+    update_last_read
 ]);
 
 export type IActionRequest = z.infer<typeof action_schema>;

@@ -27,6 +27,17 @@ export class DBConn
             user: 'root',
             password: 'SawaChat10@', //must change can't hard code it..
             database: 'sawachat',
+
+            typeCast : (field, next) => {  
+                if (field.type === "JSON")
+                {
+                    const val = field.string("utf8");
+                    return val ? JSON.parse(val) : null; 
+                }
+
+                return next();
+            },
+
             waitForConnections: true,
             connectionLimit: 10
         });
@@ -52,11 +63,11 @@ export class DBConn
         return {affectedRows : result.affectedRows, insertId : result.insertId};
     }
 
-    public async executeQuery<T> (sql : string, params :any[]) : Promise<IDBQuery<T>>{
-
+    public async executeQuery<T>(sql: string, params: any[]): Promise<IDBQuery<T>> {
         const curr_conn = DBConn.conn_pools.getStore() || DBConn.pool;
 
-        const [result] = await curr_conn.execute(sql, params) as [T[] , any[]];
-        return {data : result, count : result.length};
+        const [result] = await curr_conn.execute(sql, params) as [T[], any[]];
+        
+        return { data: result, count: result.length };
     }
 }

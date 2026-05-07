@@ -2,10 +2,36 @@ import React from "react";
 import { useSocket } from "../../../hooks/useSocket";
 import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { IRequestPublic } from "../../../interfaces/public/IRequestPublic";
+import { ENotificationType } from "../../../interfaces/UI/notificationFormat";
 
 export default function RequestsTab() {
 
-    const { socket, requests, loadingRequests, setaddContactPOPUP, activeRoomRef} = useSocket();
+    const { socket, requests, loadingRequests, setaddContactPOPUP, notifications, setNotifCountType, setNotifications } = useSocket();
+
+    const handleNotif = (notif_public_id : string, req_public_id : string) => {
+        const request_payload = {
+            type: IPayloadRequestType.MARK_NOTIF_READ,
+            payload: {
+                notif_public_id : notif_public_id,
+            },
+        };
+
+        socket.emit("message", request_payload);
+        setNotifCountType((prev) => {
+            return {
+                ...prev,
+                [ENotificationType.RECEIVE_REQUEST]: Math.max(0,  prev[ENotificationType.RECEIVE_REQUEST] - 1),
+            };
+        });
+
+        setNotifications((prev) => {
+            const { [req_public_id] : _, ...rest } = prev[ENotificationType.RECEIVE_REQUEST] || {};
+            return {
+                ...prev,
+                [ENotificationType.RECEIVE_REQUEST]: rest,
+            };
+        });
+    };
 
     return (
 
@@ -44,7 +70,10 @@ export default function RequestsTab() {
                             <p style={{ color: "rgba(0, 0, 0, 0.4)" }}>no requests were found</p>
                         </div>
                     ) : (
-                        requests.map((req: IRequestPublic) => (
+                        requests.map((req: IRequestPublic) => { 
+                            const req_notif = notifications[ENotificationType.RECEIVE_REQUEST][req.public_id] || {};
+
+                            return(
                             <div key={req.public_id} className="request-item" style={{
                                 display: "flex",
                                 flexDirection: "column", // Stack content and buttons for better mobile/sidebar fit
@@ -53,7 +82,7 @@ export default function RequestsTab() {
                                 gap: "8px"
                             }}>
                                 <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px" }}>
-                                    {/* 1. Time on the far left */ }
+                                    {/* 1. Time on the far left */}
                                     <span style={{ fontSize: "0.75rem", color: "var(--text-sub)", minWidth: "45px" }}>
                                         {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
@@ -101,6 +130,8 @@ export default function RequestsTab() {
                                                 }
 
                                                 socket?.emit("message", request_payload);
+
+                                                handleNotif(req_notif.public_id, req.public_id);
                                             }}
                                             className="btn-small btn-primary"
                                             style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
@@ -119,6 +150,8 @@ export default function RequestsTab() {
                                                     }
                                                 }
                                                 socket?.emit("message", request_payload);
+
+                                                handleNotif(req_notif.public_id, req.public_id);
                                             }}
                                             className="btn-small btn-primary"
                                             style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "var(--error)" }}
@@ -133,15 +166,17 @@ export default function RequestsTab() {
                                         <button
                                             onClick={() => {
                                                 const request_payload = {
-                                                    type : IPayloadRequestType.VERDICT_REJOIN,
-                                                    payload : {
-                                                        req_public_id : req.public_id,
-                                                        username : req.username,
-                                                        verdict : true,
+                                                    type: IPayloadRequestType.VERDICT_REJOIN,
+                                                    payload: {
+                                                        req_public_id: req.public_id,
+                                                        username: req.username,
+                                                        verdict: true,
                                                     },
                                                 };
 
                                                 socket.emit("message", request_payload);
+
+                                                handleNotif(req_notif.public_id, req.public_id);
                                             }}
 
                                             className="btn-small btn-primary"
@@ -174,7 +209,7 @@ export default function RequestsTab() {
                                     </button>
                                 </div>
                             </div>
-                        ))
+                        )})
                     )}
                 </div>
             </>)}

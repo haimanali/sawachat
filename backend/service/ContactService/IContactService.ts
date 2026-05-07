@@ -1,9 +1,11 @@
+import { IClient } from "../../domain/IClient.js";
 import { IRequest } from "../../domain/IRequest.js";
 import { IRoom } from "../../domain/IRoom.js";
 import { IServiceLayerResponse } from "../../responseFormat.js";
 
 export interface IContactService
 {
+    performGetContacts(user_id: number): Promise<IServiceLayerResponse<IClient []>>;
     performRemoveReactive(room_id : number): Promise<IServiceLayerResponse>;
     performVerdictRejoin(request: IRequest, request_verdict: boolean): Promise<IServiceLayerResponse<IRoom>>;
     performGetRequest(req_public_id: string): Promise<IServiceLayerResponse<IRequest>>;
@@ -15,5 +17,5 @@ export interface IContactService
     performVerdictRequest(verdict : boolean, s_username : number, r_user_id : number) : Promise<IServiceLayerResponse>;
     performAddContact(s_user_id: number, r_user_id : number) : Promise<IServiceLayerResponse>;
 
-    performLoadRequests(user_id: number,  cursor : Date | null) : Promise<IServiceLayerResponse<IRequest []>>;
+    performLoadRequests(user_id: number) : Promise<IServiceLayerResponse<IRequest []>>;
 }

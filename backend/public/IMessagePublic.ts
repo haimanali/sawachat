@@ -9,5 +9,6 @@ export interface IMessagePublic
     created_at : Date,
     is_sent : boolean,
     is_delivered : boolean,
-    is_read : boolean
+    is_read : boolean,
+    is_del : boolean,
 }

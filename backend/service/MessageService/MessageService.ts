@@ -31,8 +31,14 @@ export class MessageService implements IMessageService
         return v4();
     }
 
+    public async performDeleteMessage(msg_public_id: string): Promise<IServiceLayerResponse> {
+        const result = await this.repository.Imessage_repo.updateMessageIsDel(msg_public_id);
+        return {success : result.success, log_message : result.log_message};
+    }
+
     public async performSendMessage(public_id : string, iv : string, content: string, s_user_id : number, room_id : number): Promise<IServiceLayerResponse<IMessage>> {
         const m_result = await this.repository.Imessage_repo.insertMessageRecord(public_id, iv, content, s_user_id, room_id);
+
         return {success : true, data : m_result.data, log_message : "message was sent"};
     }
 

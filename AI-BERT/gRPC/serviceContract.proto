@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package toxicity;
+
+service ToxicityScanner {
+  rpc AnalyzeMessage (EncryptedRequest) returns (VerdictResponse) {}
+}
+
+message EncryptedRequest {
+  string enc_key = 1;
+  string iv = 2;
+  string content = 3;
+}
+
+message VerdictResponse {
+  string label = 1;
+  float score = 2; 
+  bool is_toxic = 3;
+}

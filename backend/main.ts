@@ -14,6 +14,12 @@ import { ContactRepositiry } from './repository/ContactRepository/ContactReposit
 import { IMessageRepository } from './repository/MessageRepository/IMessageRepository.js';
 import { MessageRepository } from "./repository/MessageRepository/MessageRepository.js"; 
 
+import { INotificationRepository } from './repository/NotificationRepository/INotificationRepository.js';
+import { NotificationRepository } from './repository/NotificationRepository/NotificationRepository.js';
+
+import { IAiRepository } from './repository/AiRepository/IAiRepository.js';
+import { AiRepository } from './repository/AiRepository/AiRepository.js';
+
 import { DBConn } from './repository/DBConn.js';
 
 //sevice layer
@@ -31,6 +37,15 @@ import { IContactService } from './service/ContactService/IContactService.js';
 
 import { IMessageService } from './service/MessageService/IMessageService.js';
 import { MessageService } from './service/MessageService/MessageService.js';
+
+import { INotificationService } from './service/NotificationService/INotificationService.js';
+import { NotificationService } from './service/NotificationService/NotificationService.js';
+
+import { ISessionService } from './service/SessionService/ISessionService.js';
+import { SessionService } from './service/SessionService/SessionService.js';
+
+import { IAiService } from './service/AiService/IAiService.js';
+import { AiService } from './service/AiService/AiService.js';
 //Application layer
 
 import {IApiApplication} from "./Application/IApiApplication.js"
@@ -40,10 +55,8 @@ import {ApiApplication} from "./Application/ApiApplication.js"
 import {StatelessController} from './controller/StatelessController.js'
 import {StatefulController} from './controller/StatefulController.js'
 
-//services object
+//layer objects
 import { Repository, Services } from './componantParams.js';
-import { ISessionService } from './service/SessionService/ISessionService.js';
-import { SessionService } from './service/SessionService/SessionService.js';
 
 
 
@@ -58,6 +71,8 @@ const Iclient_repo : IClientRepository = ClientRepository.getInstance(db_conn);
 const Iroom_repo : IRoomRepository = RoomRepository.getInstance(db_conn);
 const Icontact_repo : IContactRepository = ContactRepositiry.getInstance(db_conn);
 const Imessage_repo : IMessageRepository = MessageRepository.getInstance(db_conn);
+const Inotif_repo : INotificationRepository = NotificationRepository.getInstance(db_conn);
+const Iai_repo : IAiRepository = AiRepository.getInstance();
 
 const repository : Repository = 
 {
@@ -65,6 +80,8 @@ const repository : Repository =
     Iroom_repo : Iroom_repo,
     Icontact_repo : Icontact_repo,
     Imessage_repo : Imessage_repo,
+    Inotif_repo : Inotif_repo,
+    Iai_repo : Iai_repo,
 }
 
 
@@ -74,6 +91,8 @@ const Iroom_service : IRoomService = RoomService.getInstance(repository);
 const Imessage_service : IMessageService = MessageService.getInstance(repository);
 const Icontact_service : IContactService = ContactService.getInstance(repository);
 const Isession_service : ISessionService = SessionService.getInstance(repository);
+const Inotif_service : INotificationService = NotificationService.getInstance(repository);
+const Iai_service : IAiService = AiService.getInstance(repository);
 
 
 const services : Services = {
@@ -83,13 +102,15 @@ const services : Services = {
         Imessage_service : Imessage_service,
         Ilogin_service : Ilogin_service,
         Isignup_service : Isignup_service,
+        Inotif_service : Inotif_service,
+        Iai_service : Iai_service,
 }
 
 
-const Iapp_layer : IApiApplication = ApiApplication.getInstance(services);
+const app_layer : IApiApplication = ApiApplication.getInstance(services);
 
-const stateless_controller : StatelessController = StatelessController.getInstance(app, Iapp_layer);
-const stateful_controller : StatefulController = StatefulController.getInstance(server, Iapp_layer);
+const stateless_controller : StatelessController = StatelessController.getInstance(app, app_layer);
+const stateful_controller : StatefulController = StatefulController.getInstance(server, app_layer);
 
 server.listen(3000, () => {console.log("server listening....")})   
 

@@ -5,6 +5,7 @@ import { IServiceLayerResponse } from "../../responseFormat.js";
 import { IRoom } from "../../domain/IRoom.js";
 import crypto from "crypto";
 import { IClient } from "../../domain/IClient.js";
+import { IMessagePublic } from "../../public/IMessagePublic.js";
 
 
 export class RoomService implements IRoomService
@@ -43,9 +44,9 @@ export class RoomService implements IRoomService
 
     public async performAddMembers(members : number[], room_id : number) : Promise<IServiceLayerResponse>
     {
-        await Promise.all(members.map( async (member) => {
-            this.repository.Iroom_repo.insertRoomMember(member, room_id);
-        }));
+        await Promise.all(members.map((member) => 
+            this.repository.Iroom_repo.insertRoomMember(member, room_id)
+        ));
 
         return {success : true, log_message : "members have been added successfully.."};
     }
@@ -65,15 +66,26 @@ export class RoomService implements IRoomService
         return { success : true, data : r_result.data, log_message : "got room by public_id"};
     }
 
-    public async performLoadRooms(user_id: number, cursor : Date | null): Promise<IServiceLayerResponse<IRoom[]>> 
+    public async performLoadRooms(user_id: number, cursor : Date | null): Promise<IServiceLayerResponse<{total_unread : number, rooms : IRoom[]}>> 
     {
         const r_result = await this.repository.Iroom_repo.getRoomsByUserID(user_id, cursor);
+        const m_result = await this.repository.Imessage_repo.getTotalUnread(user_id);
         
         return {
             success : r_result.success,
-            data : r_result.data,
+            data : {total_unread : m_result.data! , rooms : r_result.data!},
             log_message : "fetched 10 user rooms",
         };
+    }
+
+    public async performUpdateLastMessage(message: IMessagePublic, room_id : number): Promise<IServiceLayerResponse> {
+        const result = await this.repository.Iroom_repo.updateChatRoomPreview(message, room_id);
+        return { success : true, log_message : result.log_message};
+    }
+
+    public async performUpdateLastRead(user_id: number, room_id: number): Promise<IServiceLayerResponse> {
+        const result = await this.repository.Iroom_repo.updateRoomMemberLastRead(user_id, room_id);
+        return {success : result.success, log_message : result.log_message};            
     }
 
     public async performLeaveContact(room_id: number, user_id : number): Promise<IServiceLayerResponse<IClient []>> {

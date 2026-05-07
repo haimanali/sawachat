@@ -9,4 +9,5 @@ export interface IMessageService
     generatePublicID() : string;
     performSendMessage(public_id : string, iv : string, message: string, s_user_id : number, room_id : number) : Promise<IServiceLayerResponse<IMessage>>;
     performLoadMessages(room_public_id : string, cursor : Date | null) : Promise<IServiceLayerResponse<IMessage []>>;
+    performDeleteMessage(msg_public_id : string) : Promise<IServiceLayerResponse>;
 }

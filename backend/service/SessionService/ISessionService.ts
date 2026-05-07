@@ -5,7 +5,10 @@ export interface ISessionService
 {
     performExtendSession(user_id: number): Promise<IServiceLayerResponse>;
     generateSessionID() : IServiceLayerResponse<string>;
+
     performVerifySession(session_id : string) : Promise<IServiceLayerResponse<IClient>>
     performVerifyUsername(username : string) : Promise<IServiceLayerResponse<IClient>>
+    performVerifyUserID (user_id : number) : Promise<IServiceLayerResponse<IClient>>
+
     performLogOutSession(session_id : string) : Promise<IServiceLayerResponse>;
 }

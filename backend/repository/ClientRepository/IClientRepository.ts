@@ -4,7 +4,12 @@ import { IRepositoryLayerResponse } from "../../responseFormat.js";
 
 export interface IClientRepository
 {
+    banClient(user_id: number): Promise<IRepositoryLayerResponse>;
+    getTotalStrike(user_id: number): Promise<IRepositoryLayerResponse<number>>;
+    strikeClient(user_id: number): Promise<IRepositoryLayerResponse>;
     extendSessionByUserID(user_id: number): Promise<IRepositoryLayerResponse>;
+
+    getClientByUserID(user_id: number) : Promise<IRepositoryLayerResponse<IClient>>;
     getClientBySessionID(session_id : string) : Promise<IRepositoryLayerResponse<IClient>>;
     checkClientExist(username : string) : Promise<IRepositoryLayerResponse<IClient>>;
     removeClientSession(session_id : string) : Promise<IRepositoryLayerResponse>;

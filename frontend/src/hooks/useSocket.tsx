@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, ReactNode, useState, use } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { IPayloadInterface, IPayloadRequestType, IPayloadResponseType } from '../interfaces/payload/EPaylaod';
+import { INotificaitonTypeCount, IPayloadInterface, IPayloadRequestType, IPayloadResponseType } from '../interfaces/payload/EPaylaod';
 import { initKey } from '../services/initKey'
 import { msgDecryption } from '../services/msgDecryption'
 import { IMessagePublic } from '../interfaces/public/IMessagePublic'
@@ -10,6 +10,11 @@ import { IClientPublic } from '../interfaces/public/IClientPublic'
 import { NavigateFunction } from "react-router-dom";
 import { ISocketContext } from '../interfaces/context/ISocketContext';
 import { IRoomCache } from '../interfaces/UI/IRoomCache';
+import { INotificationPublic } from '../interfaces/public/INotificationPublic';
+import { ENotificationType, IGlobalNotifCount, NotificationTypeUnion } from '../interfaces/UI/notificationFormat';
+import { INotificationState } from '../interfaces/UI/INotificationState';
+import { IContactState } from '../interfaces/UI/IContactState';
+import { apiCall } from '../services/apiCaller';
 
 
 
@@ -19,6 +24,23 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
 
     const socketRef = useRef<Socket | null>(null);
+
+    const [notifications, setNotifications] = useState<INotificationState>({
+        [ENotificationType.CREATE_CONTACT]: {},
+        [ENotificationType.RECEIVE_REQUEST]: {},
+    });
+
+    const [notifCountType, setNotifCountType] = useState<IGlobalNotifCount>(
+        {
+            [ENotificationType.CREATE_CONTACT]: 0,
+            [ENotificationType.RECEIVE_REQUEST]: 0,
+            [ENotificationType.RECEIVE_MESSAGE]: 0,
+        }
+    );
+
+    const [onlineStatus, setOnlineStatus] = useState<"online" | "offline">("online");
+    const online_status_ref = useRef<"online" | "offline">("online");
+    const [contacts, setContacts] = useState<Record<string, IContactState>>({});
 
     const [rooms, setRooms] = useState<IRoomPublic[]>([]);
     const [roomCache, setRoomCache] = useState<Record<string, IRoomCache>>({});
@@ -50,17 +72,24 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
     const last_activity = useRef(Date.now());
 
+    const [activeTab, setActive] = useState<"rooms" | "requests">("rooms");
+
+
 
     useEffect(() => {
-        const updateActivity = () => { 
+        const updateActivity = () => {
+            if (!document.hasFocus())
+                return;
             last_activity.current = Date.now();
 
-            if (!socketRef.current?.active && !socketRef.current?.connected)
-            {
+            if (!socketRef.current?.active && !socketRef.current?.connected) {
                 socketRef.current?.connect();
-                showToast("welcome back!");
             }
-         };
+
+            if (online_status_ref.current === "offline" && socketRef.current?.connected) {
+                socketRef.current.emit(IPayloadRequestType.ONLINE_STATUS);
+            }
+        };
         window.addEventListener("mousemove", updateActivity);
         window.addEventListener("keydown", updateActivity);
 
@@ -71,22 +100,38 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
     }, []);
 
     useEffect(() => {
-        const interval = setInterval( () => {
+        if (status !== "authorized")
+            return;
+
+        const interval = setInterval(() => {
 
             const idle_time = Date.now() - last_activity.current;
             const THREE_HOURS = 1000 * 60 * 60 * 3;
-    
-            if (socketRef.current?.connected && idle_time < THREE_HOURS && document.visibilityState === "visible")
-            {
-                socketRef.current.emit("message");
+
+            if (socketRef.current?.connected && idle_time < THREE_HOURS) {
+                socketRef.current.emit(IPayloadRequestType.EXTEND_SESSION);
             }
-            else
-            {
-                showToast("disconneted due to long inactivity");
-                socketRef.current?.disconnect();
-            }
-            
+
         }, 1000 * 60 * 15);
+
+        return () => { clearInterval(interval) };
+
+    }, [socketRef.current]);
+
+
+    useEffect(() => {
+        if (status !== "authorized")
+            return;
+
+        const interval = setInterval(() => {
+            const idle_time = Date.now() - last_activity.current;
+            const FIVE_MIN = 1000 * 60 * 5;
+
+            if (socketRef.current?.connected && idle_time < FIVE_MIN) {
+                socketRef.current.emit(IPayloadRequestType.ONLINE_STATUS);
+            }
+
+        }, 1000 * 60 * 2.5);
 
         return () => { clearInterval(interval) };
 
@@ -102,15 +147,168 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
             socketRef.current = io("http://localhost:3000", {
                 withCredentials: true,
                 autoConnect: true,
+                reconnectionAttempts: 3
             });
 
             const ws = socketRef.current;
 
+            ws.on("connect_error", async (err) => {
+                console.error("Connection failed:", err.message);
 
-            ws.on(IPayloadResponseType.ONLOAD_ROOMS, (response) => {
-                const payload: IPayloadInterface<IRoomPublic[]> = response.payload;
-                const room_items: IRoomPublic[] = payload.data!;
+                if (err.message === IPayloadResponseType.ONAUTH_FAIL) {
+                    navigate("/login");
+                }
+            });
+
+            ws.on(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, (payload: IPayloadInterface<{ state: 'online' | 'offline' }>) => {
+                const state = payload.data!.state;
+                setOnlineStatus(state);
+                online_status_ref.current = state;
+
+                switch (state) {
+                    case 'online': { showToast("welcome back!"); } break;
+                    case 'offline': { showToast("Status changed to Offline due to long inactivity"); } break;
+                };
+
+            });
+
+            ws.on(IPayloadResponseType.ONONLINE_STATUS, (payload: IPayloadInterface<{ username: string, state: 'online' | 'offline' }>) => {
+                const { username, state } = payload.data!;
+
+                setContacts((prev) => {
+                    if (!prev[username])
+                        return prev;
+
+
+                    return {
+                        ...prev,
+                        [username]: {
+                            ...prev[username],
+                            onlineState: state
+                        }
+                    };
+                });
+            });
+
+            ws.on(IPayloadResponseType.ONLOAD_CONTACTS, (payload: IPayloadInterface<IContactState[]>) => {
+                const contactsArray = payload.data!;
+
+                setContacts((prev) => {
+                    const contact_obj = contactsArray.reduce((acc, contact) => {
+                        acc[contact.client.username] = contact;
+                        return acc;
+                    }, {} as Record<string, IContactState>);
+
+                    return {
+                        ...prev,
+                        ...contact_obj,
+                    };
+                });
+            });
+
+            ws.on(IPayloadResponseType.ONLOAD_NOTIFICATIONS, (payload: IPayloadInterface<{ total: INotificaitonTypeCount, notifications: INotificationPublic<NotificationTypeUnion>[] }>) => {
+                const notification_items = payload.data!.notifications;
+                const total_record = payload.data!.total;
+                if (notification_items.length <= 0)
+                    return;
+
+                setNotifCountType((prev) => {
+                    return {
+                        ...prev,
+                        [ENotificationType.CREATE_CONTACT]: total_record.create_contact,
+                        [ENotificationType.RECEIVE_REQUEST]: total_record.receive_request,
+                    };
+                });
+                setNotifications((prev) => {
+                    const prev_items = { ...prev };
+
+                    notification_items.forEach((notif) => {
+
+                        switch (notif.payload.type) {
+                            case ENotificationType.CREATE_CONTACT:
+                                {
+                                    prev_items[ENotificationType.CREATE_CONTACT][notif.payload.room.public_id] = notif;
+                                }
+                                break;
+                            case ENotificationType.RECEIVE_REQUEST:
+                                {
+                                    prev_items[ENotificationType.RECEIVE_REQUEST][notif.payload.request.public_id] = notif;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+
+                    });
+
+                    return prev_items;
+                });
+                let wel_msg = ``;
+                if (notifCountType[ENotificationType.CREATE_CONTACT] > 0)
+                    wel_msg += `${notifCountType[ENotificationType.CREATE_CONTACT]} new Contacts,`
+                if (notifCountType[ENotificationType.RECEIVE_MESSAGE] > 0)
+                    wel_msg += ` ${notifCountType[ENotificationType.RECEIVE_MESSAGE]} new Messages,`
+                if (notifCountType[ENotificationType.RECEIVE_REQUEST] > 0)
+                    wel_msg += ` ${notifCountType[ENotificationType.RECEIVE_REQUEST]} new Requests`
+
+                if (wel_msg)
+                    showToast(wel_msg);
+
+            });
+
+            ws.on(IPayloadResponseType.ONTRIGGER_NOTIFICATION, (payload: IPayloadInterface<INotificationPublic<NotificationTypeUnion>>) => {
+                const notification_item = payload.data!;
+
+                setNotifications((prev) => {
+                    const type = notification_item.payload.type;
+
+                    let entityId;
+
+                    switch (type) {
+                        case ENotificationType.CREATE_CONTACT:
+                            {
+                                entityId = notification_item.payload.room.public_id;
+                            }
+                            break;
+                        case ENotificationType.RECEIVE_REQUEST:
+                            {
+                                entityId = notification_item.payload.request.public_id;
+                            }
+                            break;
+                    }
+
+                    if (prev[type] && prev[type][entityId]) {
+                        return prev;
+                    }
+
+                    const updatedTypeGroup = {
+                        ...prev[type],
+                        [entityId]: notification_item
+                    };
+
+                    const newNotifications = {
+                        ...prev,
+                        [type]: updatedTypeGroup
+                    };
+
+                    setNotifCountType((prevCounts) => ({
+                        ...prevCounts,
+                        [type]: Object.keys(updatedTypeGroup).length
+                    }));
+
+                    return newNotifications;
+                });
+            });
+
+            ws.on(IPayloadResponseType.ONLOAD_ROOMS, (payload: IPayloadInterface<{ total_unread: number, rooms: IRoomPublic[] }>) => {
+                const room_items: IRoomPublic[] = payload.data!.rooms;
                 setLoadingRooms(false);
+                setNotifCountType((prev) => {
+                    return {
+                        ...prev,
+                        [ENotificationType.RECEIVE_MESSAGE]: payload.data!.total_unread,
+                    };
+                });
 
                 if (room_items.length === 0) {
                     setHasMoreRooms(false);
@@ -124,7 +322,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                     return [...new_rooms, ...prev];
                 });
 
-                setActiveRoomSetup(payload.data![0]);
+                setActiveRoomSetup(room_items[0]);
 
                 rooms_cursor.current = room_items[room_items.length - 1].created_at;
 
@@ -134,8 +332,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 }
             });
 
-            ws.on(IPayloadResponseType.ONLOAD_REQUESTS, (response) => {
-                const payload: IPayloadInterface<IRequestPublic[]> = response.payload;
+            ws.on(IPayloadResponseType.ONLOAD_REQUESTS, (payload: IPayloadInterface<IRequestPublic[]>) => {
                 const request_items: IRequestPublic[] = payload.data!;
                 setLoadingRequests(false);
 
@@ -160,8 +357,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 }
             });
 
-            ws.on(IPayloadResponseType.ONLOAD_MESSAGES, async (response) => {
-                const payload: IPayloadInterface<IMessagePublic[]> = response.payload;
+            ws.on(IPayloadResponseType.ONLOAD_MESSAGES, async (payload: IPayloadInterface<IMessagePublic[]>) => {
                 const encmessage_items: IMessagePublic[] = payload.data!;
                 setLoadingMessages(false);
 
@@ -174,12 +370,15 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 const crypto_key = await initKey(activeRoomRef.current!.enc_key);
 
                 const decrpyt_messages = await Promise.all(encmessage_items.map(async (enc_message) => {
-
-                    const decrpyted_text = await msgDecryption(enc_message.content, crypto_key, enc_message.iv);
+                    let content;
+                    if (enc_message.is_del)
+                        content = enc_message.content;
+                    else
+                        content = await msgDecryption(enc_message.content, crypto_key, enc_message.iv);
 
                     return {
                         ...enc_message,
-                        content: decrpyted_text,
+                        content: content,
                     };
 
                 }));
@@ -220,8 +419,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 }
             });
 
-            ws.on(IPayloadResponseType.ONSEND_MESSAGE, async (response) => {
-                const payload: IPayloadInterface<{ enc_message: IMessagePublic, iv: string }> = response.payload;
+            ws.on(IPayloadResponseType.ONSEND_MESSAGE, async (payload: IPayloadInterface<{ enc_message: IMessagePublic, iv: string }>) => {
 
                 const enc_message = payload.data!.enc_message;
                 const iv = payload.data!.iv;
@@ -259,10 +457,46 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 });
 
 
+                setRooms((prev) =>
+                    prev.map((room) =>
+                        room.public_id === enc_message.room_public_id ?
+                            { ...room, unread_msgs: onlineStatus === 'online' && activeRoomRef.current!.public_id === enc_message.room_public_id ? room.unread_msgs : room.unread_msgs + 1, last_msg_date: new Date(), last_message_payload: enc_message } :
+                            room));
+
+
             });
 
-            ws.on(IPayloadResponseType.ONRECEIVE_MESSAGE, async (response) => {
-                const payload: IPayloadInterface<{ enc_message: IMessagePublic, iv: string }> = response.payload;
+            ws.on(IPayloadResponseType.ONDELETE_MESSAGE, (payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string }>) => {
+                const { msg_public_id, room_public_id } = payload.data!;
+
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        msg.public_id === msg_public_id
+                            ? { ...msg, is_del: true, content: IPayloadResponseType.MESSAGE_DELELTED }
+                            : msg
+                    )
+                );
+
+                setRoomCache((prev) => {
+                    const curr_room = prev[room_public_id];
+                    if (!curr_room) return prev;
+
+                    return {
+                        ...prev,
+                        [room_public_id]: {
+                            ...curr_room,
+                            messages: curr_room.messages.map((msg) =>
+                                msg.public_id === msg_public_id
+                                    ? { ...msg, is_del: true, content: IPayloadResponseType.MESSAGE_DELELTED }
+                                    : msg
+                            ),
+                        },
+                    };
+                });
+
+            });
+
+            ws.on(IPayloadResponseType.ONRECEIVE_MESSAGE, async (payload: IPayloadInterface<{ enc_message: IMessagePublic, iv: string }>) => {
                 const enc_message = payload.data!.enc_message;
 
                 const request_payload = {
@@ -292,9 +526,19 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                     };
                 });
 
-                if (enc_message.room_public_id !== activeRoomRef.current?.public_id)
-                    return;
+                if (enc_message.room_public_id !== activeRoomRef.current?.public_id) {
+                    setNotifCountType((prev) => {
+                        let total_msg = prev[ENotificationType.RECEIVE_MESSAGE];
+                        total_msg += 1;
 
+                        return {
+                            ...prev,
+                            [ENotificationType.RECEIVE_MESSAGE]: total_msg
+                        };
+                    });
+
+                    return;
+                }
 
                 const iv = payload.data!.iv;
 
@@ -313,11 +557,15 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 setMessages((prev) => [...prev, message]);
 
 
+                setRooms((prev) =>
+                    prev.map((room) =>
+                        room.public_id === enc_message.room_public_id ?
+                            { ...room, unread_msgs: onlineStatus === 'online' && activeRoomRef.current!.public_id === enc_message.room_public_id ? room.unread_msgs : room.unread_msgs + 1, last_msg_date: new Date(), last_message_payload: enc_message } :
+                            room));
+
             });
 
-            ws.on(IPayloadResponseType.ONMESSAGE_RECEIVED, (response) => {
-                const payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string, is_delivered: boolean }> = response.payload;
-
+            ws.on(IPayloadResponseType.ONMESSAGE_RECEIVED, (payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string, is_delivered: boolean }>) => {
                 setRoomCache((prev) => {
                     const curr_room = prev[payload.data!.room_public_id];
 
@@ -351,8 +599,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
             });
 
-            ws.on(IPayloadResponseType.ONSEND_REQUEST, (response) => {
-                const payload: IPayloadInterface<IRequestPublic> = response.payload;
+            ws.on(IPayloadResponseType.ONSEND_REQUEST, (payload: IPayloadInterface<IRequestPublic>) => {
 
                 setAddContactUsername("");
 
@@ -372,9 +619,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
             });
 
 
-            ws.on(IPayloadResponseType.ONRECEIVE_REQUEST, (response) => {
-
-                const payload: IPayloadInterface<IRequestPublic> = response.payload;
+            ws.on(IPayloadResponseType.ONRECEIVE_REQUEST, (payload: IPayloadInterface<IRequestPublic>) => {
 
                 setRequests(prev => {
                     if (prev.some(req => req.public_id === payload.data!.public_id))
@@ -384,28 +629,36 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 });
             });
 
-            ws.on(IPayloadResponseType.ONVERDICT_REQUEST, (response) => {
-
-                const payload: IPayloadInterface<string> = response.payload;
+            ws.on(IPayloadResponseType.ONVERDICT_REQUEST, (payload: IPayloadInterface<string>) => {
 
                 setRequests(prev => prev.filter(req => req.public_id !== payload.data!));
 
                 showToast(payload.log_message);
             });
 
-            ws.on(IPayloadResponseType.ONCREATE_CONTACT, (response) => {
-                const payload: IPayloadInterface<IRoomPublic> = response.payload;
+            ws.on(IPayloadResponseType.ONCREATE_CONTACT, (payload: IPayloadInterface<{ room: IRoomPublic, contact: IClientPublic, onlineState: "online" | "offline" }>) => {
+                const { contact, room, onlineState } = payload.data!;
 
                 setRooms(prev => {
-                    if (prev.some(room => room.public_id === payload.data!.public_id))
+                    if (prev.some(r => r.public_id === room.public_id))
                         return prev;
 
-                    return [payload.data!, ...prev];
+                    return [room, ...prev];
                 });
+
+                setContacts((prev) => {
+                    return {
+                        ...prev,
+                        [contact.username]: {
+                            client: contact,
+                            onlineState: onlineState,
+                        },
+                    };
+                });
+
             });
 
-            ws.on(IPayloadResponseType.ONDELETE_CONTACT, (response) => {
-                const payload: IPayloadInterface = response.payload;
+            ws.on(IPayloadResponseType.ONDELETE_CONTACT, (payload: IPayloadInterface<IClientPublic>) => {
                 showToast(payload.log_message);
 
                 setRoomCache((prev) => {
@@ -415,11 +668,18 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
                 setRooms((prev) => prev.filter(room => room.public_id !== activeRoomRef.current!.public_id));
                 setActiveRoomSetup(rooms.length <= 0 ? null : rooms[rooms.length - 1]);
+
             });
 
-            ws.on(IPayloadResponseType.ONDEACTIVATE_CONTACT, (response) => {
-                const payload: IPayloadInterface<{ room_public_id: string }> = response.payload;
+            ws.on(IPayloadResponseType.ONREMOVE_CONTACT, (payload: IPayloadInterface<IClientPublic>) => {
+                setContacts((prev) => {
+                    const { [payload.data!.username]: _, ...rest } = prev;
+                    return rest;
+                });
+            });
 
+
+            ws.on(IPayloadResponseType.ONDEACTIVATE_CONTACT, (payload: IPayloadInterface<{ room_public_id: string }>) => {
                 if (payload.data!.room_public_id === activeRoomRef.current!.public_id)
                     setMsgInputDOM(false);
 
@@ -442,14 +702,11 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
             });
 
-            ws.on(IPayloadResponseType.ONREJOIN_REQUEST, (response) => {
-                const payload: IPayloadInterface = response.payload;
-
+            ws.on(IPayloadResponseType.ONREJOIN_REQUEST, (payload: IPayloadInterface) => {
                 showToast(payload.log_message);
             });
 
-            ws.on(IPayloadResponseType.ONRECEIVE_REJOIN, (response) => {
-                const payload: IPayloadInterface<IRequestPublic> = response.payload;
+            ws.on(IPayloadResponseType.ONRECEIVE_REJOIN, (payload: IPayloadInterface<IRequestPublic>) => {
                 if (!payload.success)
                     return; 1
 
@@ -461,8 +718,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 });
             });
 
-            ws.on(IPayloadResponseType.ONVERDICT_REJOIN, (response) => {
-                const payload: IPayloadInterface<{ req_public_id: string, room: IRoomPublic }> = response.payload;
+            ws.on(IPayloadResponseType.ONVERDICT_REJOIN, (payload: IPayloadInterface<{ req_public_id: string, room: IRoomPublic }>) => {
                 showToast(payload.log_message);
                 setRequests((prev) => prev.filter(req => req.public_id !== payload.data!.req_public_id));
 
@@ -477,9 +733,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 });
             });
 
-            ws.on(IPayloadResponseType.ONACTIVATE_CONTACT, (response) => {
-                const payload: IPayloadInterface<{ room_public_id: string }> = response.payload;
-
+            ws.on(IPayloadResponseType.ONACTIVATE_CONTACT, (payload: IPayloadInterface<{ room_public_id: string }>) => {
                 if (!payload.success)
                     return;
 
@@ -504,6 +758,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
 
             ws.on("connect", () => {
+                console.log("client connected");
 
                 ws.emit("message", { type: IPayloadRequestType.DELIVER_RECEIVED_MESSAGES });
 
@@ -516,14 +771,18 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
                 ws.emit("message", request_payload1);
 
-                const request_payload2 = {
-                    type: IPayloadRequestType.LOAD_REQUESTS,
-                    payload: {
-                        cursor: null,
-                    },
-                };
+                const request_payload2 = { type: IPayloadRequestType.LOAD_REQUESTS };
 
                 ws.emit("message", request_payload2);
+
+                const request_payload3 = { type: IPayloadRequestType.LOAD_NOTIFICATIONS };
+
+                ws.emit("message", request_payload3);
+
+                const request_payload4 = { type: IPayloadRequestType.LOAD_CONTACTS };
+
+                ws.emit("message", request_payload4);
+
             });
 
             ws.on("disconnect", () => {
@@ -583,6 +842,14 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
         setMsgInputDOM,
         roomSettingsMenu,
         setRoomSettingsMenu,
+        activeTab,
+        setActive,
+        notifications,
+        notifCountType,
+        setNotifCountType,
+        setNotifications,
+        onlineStatus,
+        contacts,
     };
 
     return (

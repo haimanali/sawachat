@@ -52,8 +52,8 @@ export class ClientRepository implements IClientRepository
 
     public async extendSessionByUserID(user_id: number): Promise<IRepositoryLayerResponse> {
         const MAX_AGE = 1000 * 60 * 60 * 24 * 14;
-        const sql = "update Session set expire = DATE_ADD(NOW(), INTERVAL 3 HOUR) where user_id ? and expire < ?";
-        const result = await this.db_conn.executeUpdate(sql, [user_id , MAX_AGE]);
+        const sql = "update Session set expire = DATE_ADD(NOW(), INTERVAL 3 HOUR) where user_id = ? and expire < ?";
+        const result = await this.db_conn.executeUpdate(sql, [user_id , new Date(Date.now() + MAX_AGE)]);
 
         if (result.affectedRows <= 0)
             throw Error("session doesn't exist");
@@ -86,6 +86,49 @@ export class ClientRepository implements IClientRepository
                 nickname: client_record.nickname,
             },
             log_message : "got client by session_id"
+        };
+    }
+    public async getTotalStrike(user_id: number): Promise<IRepositoryLayerResponse<number>> {
+        const sql = "select strike from Client where user_id = ?";
+        const result = await this.db_conn.executeQuery<{strike : number}>(sql, [user_id]);
+
+        if (result.count <= 0)
+            return {
+                success : false,
+                log_message : "account not found...",
+            };
+
+        return {
+            success : true,
+            data : result.data[0].strike,
+            log_message : "got account strikes",
+        };
+    }
+
+    public async strikeClient(user_id: number): Promise<IRepositoryLayerResponse> {
+        const sql = "update Client set strike = strike + 1 where user_id = ? ";
+        const result = await this.db_conn.executeUpdate(sql, [user_id]);
+
+        if (result.affectedRows <= 0)
+            throw Error("something went wrong..");
+
+        return {
+            success : true,
+            log_message : "account strikes updated",
+        };
+
+    }
+
+    public async banClient(user_id: number): Promise<IRepositoryLayerResponse> {
+        const sql = "update Client set is_ban = true where user_id = ?";
+        const result = await this.db_conn.executeUpdate(sql, [user_id]);
+
+        if (result.affectedRows <= 0)
+            throw Error("something went wrong..");
+
+        return {
+            success : true,
+            log_message : "account has been banned",
         };
     }
 
@@ -174,15 +217,18 @@ export class ClientRepository implements IClientRepository
         
         return {
             success : true,
-            data : client,
+            data : client.data,
             log_message : "client record was inserted",
         };
     }
 
 
-    private async getClientByUserID(user_id: number) : Promise<IClient>{
+    public async getClientByUserID(user_id: number) : Promise<IRepositoryLayerResponse<IClient>>{
         const sql = "select * from Client where user_id = ?";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [user_id]);
+
+        if (result.count <= 0)
+            return {success : false, log_message : "client id was not found"};
 
         const [data] = result.data;
 
@@ -192,7 +238,11 @@ export class ClientRepository implements IClientRepository
             nickname : data.nickname, 
         };
 
-        return client;
+        return {
+            success : true,
+            data : client,
+            log_message : "client by user id",
+        };
     }
 
 

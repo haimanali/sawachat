@@ -17,11 +17,11 @@ export class StatelessController {
     }
 
     private static instance : StatelessController;
-    private Iapp_layer : IApiApplication;
+    private app_layer : IApiApplication;
     private app : Express;
     private constructor (app : express.Express,  Iapp_layer : IApiApplication)
     {
-        this.Iapp_layer = Iapp_layer;
+        this.app_layer = Iapp_layer;
         this.app = app;
 
         this.app.use(cors({
@@ -127,7 +127,9 @@ export class StatelessController {
                     return;
                 }
 
-            const payload = await this.Iapp_layer.authenticateBySessionID(session_id);
+            const payload = await this.app_layer.authenticateBySessionID(session_id);
+
+            console.log(payload.data!.username + " " + req.params.username);
 
             if (payload.data!.username !== req.params.username)
             {
@@ -154,7 +156,7 @@ export class StatelessController {
                 return;
             }
                         
-            const payload = await this.Iapp_layer.authenticateBySessionID(session_id);
+            const payload = await this.app_layer.authenticateBySessionID(session_id);
             res.status(200).json( {
                 success : payload.success,
                 data : payload.data,
@@ -171,7 +173,7 @@ export class StatelessController {
                 return;
             }
 
-            const payload = await this.Iapp_layer.logoutUser(session_id);
+            const payload = await this.app_layer.logoutUser(session_id);
 
             res.clearCookie("session_id");
             res.status(200).json( payload );
@@ -180,7 +182,7 @@ export class StatelessController {
         this.app.post("/api/login", this.validateJSON(login_schema), this.errorHandler(async (req : Request, res : Response) => {
 
                 const req_body : ILoginRequest = req.body;
-                const payload = await this.Iapp_layer.loginUser(req_body);
+                const payload = await this.app_layer.loginUser(req_body);
 
                 if (payload.success)
                 {
@@ -197,7 +199,7 @@ export class StatelessController {
         this.app.post("/api/signup", this.validateJSON(signup_schema), this.errorHandler(async (req : Request, res : Response) => {
 
             const req_body : ISignUpRequest = req.body;
-            const payload = await this.Iapp_layer.registerUser(req_body);
+            const payload = await this.app_layer.registerUser(req_body);
 
             if (payload.success)
             {

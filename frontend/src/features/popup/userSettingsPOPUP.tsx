@@ -1,5 +1,6 @@
 import React from "react";
 import { useSocket } from "../../hooks/useSocket";
+import UserAvatar from "../../componets/avatar/userAvatar"
 
 export default function UserSettingsPOPUP() {
 
@@ -29,19 +30,7 @@ export default function UserSettingsPOPUP() {
                             style={{ border: "none", background: "transparent", cursor: "pointer", position: "relative", borderRadius: "50%" }}>
                             <div className="chat-avatar" id="settings-avatar" style={{ width: "56px", height: "56px", fontSize: "1.5rem" }}>{
                                 (<>
-                                    <div className="request-avatar" style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        borderRadius: "50%",
-                                        backgroundColor: "var(--primary)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "white",
-                                        fontSize: "0.8rem"
-                                    }}>
-                                        {userState!.nickname.charAt(0).toUpperCase()}
-                                    </div>
+                                        <UserAvatar size="100%" nickname={userState.nickname}/>
                                 </>)
                             }</div>
                             <div style={{ position: "absolute", bottom: 0, right: "-4px", background: "var(--surface)", borderRadius: "50%", padding: "4px", boxShadow: "var(--shadow)" }}>

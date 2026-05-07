@@ -1,8 +1,12 @@
+import { assert } from "console";
 import { IRequest } from "../../domain/IRequest.js";
 import { IRequestRecord } from "../../entity/IRequestRecord.js";
+import { IPayloadRequestType } from "../../requestFormat.js";
 import { IRepositoryLayerResponse } from "../../responseFormat.js";
 import { DBConn } from "../DBConn.js";
 import { IContactRepository } from "./IContactRepository.js";
+import { IClient } from "../../domain/IClient.js";
+import { IClientRecord } from "../../entity/IClientRecord.js";
 
 export class ContactRepositiry implements IContactRepository
 {
@@ -42,7 +46,6 @@ export class ContactRepositiry implements IContactRepository
             success : true,
             log_message : "request is already sent",
         };
-
         if (result.count > 0)
         {
             return_data.data = true;
@@ -115,19 +118,12 @@ export class ContactRepositiry implements IContactRepository
         };
     }
 
-    public async getRequestsByUserID(r_user_id: number, cursor : Date | null): Promise<IRepositoryLayerResponse<IRequest []>> {
-        let sql = "select BIN_TO_UUID(r.public_id) as public_id, c.username, c.nickname, r.created_at, r.type from Request r join Client c on r.sender_id = c.user_id where r.receiver_id = ? and r.status = 'pending' ";
-        let params : any[] = [r_user_id];
+    public async getRequestsByUserID(r_user_id: number): Promise<IRepositoryLayerResponse<IRequest []>> {
+        let sql = `select BIN_TO_UUID(r.public_id) as public_id, c.username, c.nickname, r.created_at, r.type 
+        from Request r join Client c on r.sender_id = c.user_id
+         where r.receiver_id = ? and r.status = 'pending' order by r.created_at desc`;
 
-        if (cursor)
-        {
-            sql += "and r.created_at < ? ";
-            params.push(cursor);
-        }
-
-        sql += "order by r.created_at desc limit 10;";
-
-        const result = await this.db_conn.executeQuery<IRequest>(sql, params);
+        const result = await this.db_conn.executeQuery<IRequest>(sql, [r_user_id]);
 
         return {
             success : true,
@@ -208,6 +204,40 @@ export class ContactRepositiry implements IContactRepository
         return {
             success : true,
             log_message : "activation request removed",
+        };
+    }
+
+    public async checkRequestLimit(user_id: number, type: "contact" | "reactive"): Promise<IRepositoryLayerResponse<boolean>> {
+        let sql = `select count(*) as total from Request where receiver_id = ? and type = ? and status = 'pending'`
+        let params : any = [user_id, type];
+
+        const result = await this.db_conn.executeQuery<{total : number}>(sql, params);
+        const [count] = result.data;
+
+
+        if (count.total >= IPayloadRequestType.LIMIT)
+            return {
+                success : true,
+                data : true,
+                log_message : "this user has full request inbox"
+            };
+
+        return {
+            success : true,
+            data : false,
+            log_message : "count is less than limit",
+        };
+
+    }
+
+    public async getContactsByUserId(user_id: number): Promise<IRepositoryLayerResponse<IClient[]>> {
+        const sql = "select cl.user_id, cl.username, cl.nickname from Contact c join Client cl on cl.user_id = c.contact_id where c.user_id = ?";
+        const result = await this.db_conn.executeQuery<IClientRecord>(sql, [user_id]);
+
+        return {
+            success : true,
+            data : result.data,
+            log_message : "got client contacts",
         };
     }
 

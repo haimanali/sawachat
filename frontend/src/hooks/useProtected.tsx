@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import React, { createContext, ReactNode, use, useContext, useEffect, useState } from "react";
 import { IClientPublic } from "../interfaces/public/IClientPublic";
 import { apiCall } from "../services/apiCaller";
 import {  useParams } from "react-router-dom";
@@ -19,7 +19,7 @@ export const ProtectedProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
 
 
-        if (userState) {
+        if (userState && userState.username === username) {
             setStatus("authorized");
             return;
         }

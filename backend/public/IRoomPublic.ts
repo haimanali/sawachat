@@ -1,3 +1,5 @@
+import { IMessagePublic } from "./IMessagePublic.js";
+
 export interface IRoomPublic
 {
     enc_key : string,
@@ -7,4 +9,9 @@ export interface IRoomPublic
     created_at : Date,
     type : "private" | "group",
     is_active : boolean,
+
+    last_msg_date : Date,
+    last_message_payload : IMessagePublic | null,
+
+    unread_msgs : number,
 }

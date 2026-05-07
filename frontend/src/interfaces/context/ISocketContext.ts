@@ -5,6 +5,10 @@ import { IMessagePublic } from "../public/IMessagePublic";
 import { IRequestPublic } from "../public/IRequestPublic";
 import { IRoomPublic } from "../public/IRoomPublic";
 import { IRoomCache } from "../UI/IRoomCache";
+import { INotificationState } from "../UI/INotificationState";
+import { IGlobalNotifCount } from "../UI/notificationFormat";
+import React from "react";
+import { IContactState } from "../UI/IContactState";
 
 export interface ISocketContext {
     socket: Socket;
@@ -22,8 +26,8 @@ export interface ISocketContext {
     setSettingsPOPUP: React.Dispatch<React.SetStateAction<boolean>>;
     setaddContactPOPUP: React.Dispatch<React.SetStateAction<boolean>>;
     setAddContactUsername : React.Dispatch<React.SetStateAction<string>>;
-    activeRoomRef: React.MutableRefObject<IRoomPublic | null>;
-    messages_cursor: React.MutableRefObject<Date | null>;
+    activeRoomRef: React.RefObject<IRoomPublic | null>;
+    messages_cursor: React.RefObject<Date | null>;
     addContactPOPUP: boolean; 
     contactRequestError : string;
     addContactUsername : string;
@@ -37,4 +41,12 @@ export interface ISocketContext {
     setMsgInputDOM : React.Dispatch<React.SetStateAction<boolean>>,
     roomSettingsMenu : boolean,
     setRoomSettingsMenu : React.Dispatch<React.SetStateAction<boolean>>,
+    activeTab : "rooms" | "requests",
+    setActive : React.Dispatch<React.SetStateAction<"rooms" | "requests">>,
+    notifications : INotificationState,
+    notifCountType : IGlobalNotifCount,
+    setNotifCountType : React.Dispatch<React.SetStateAction<IGlobalNotifCount>>,
+    setNotifications : React.Dispatch<React.SetStateAction<INotificationState>>,
+    onlineStatus : "online" | "offline",
+    contacts: Record<string, IContactState>,
 }

@@ -4,6 +4,7 @@ import { initKey } from "../../../services/initKey";
 import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { useSocket } from "../../../hooks/useSocket";
 import { IMessagePublic } from "../../../interfaces/public/IMessagePublic";
+import UserAvatar from "../../../componets/avatar/userAvatar";
 
 export default function ChatArea() {
 
@@ -15,11 +16,26 @@ export default function ChatArea() {
         activeRoomSetup,
         activeRoomRef,
         userState,
+        onlineStatus,
+        contacts,
         roomSettingsMenu, setRoomSettingsMenu
     } = useSocket();
 
     const messageEnd_anchor = useRef<HTMLDivElement | null>(null);
     const [msgInput, setMsgInput] = useState<string>("");
+
+    useEffect(() => {
+        if (onlineStatus !== "online" || !activeRoomRef.current || messages.length === 0)
+            return;
+
+        const payload = {
+            type: IPayloadRequestType.UPDATE_LAST_READ,
+            payload: {
+                room_public_id: activeRoomRef.current!.public_id,
+            },
+        };
+        socket.emit("message", payload);
+    }, [messages.length, onlineStatus]);
 
     useEffect(() => {
         const scrollToLatest = () => {
@@ -55,23 +71,7 @@ export default function ChatArea() {
                     <>
                         {/* 1. THE HEADER (Always visible if room is selected) */}
                         <header className="chat-header">
-                            <div className="chat-avatar" id="active-chat-avatar">
-                                <div className="room-avatar" style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    borderRadius: "50%",
-                                    backgroundColor: activeRoomSetup.type === "group" ? "var(--secondary)" : "var(--primary)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    color: "white",
-                                    fontSize: "1rem",
-                                    fontWeight: "bold",
-                                    flexShrink: 0
-                                }}>
-                                    {activeRoomSetup.room_name.charAt(0).toUpperCase()}
-                                </div>
-                            </div>
+                            <UserAvatar mode={contacts[activeRoomSetup.room_subname]?.onlineState || "offline"} nickname={contacts[activeRoomSetup.room_subname]?.client.nickname || "User"} />
                             <div className="chat-meta">
                                 <h2 className="chat-name" id="active-chat-name">{activeRoomSetup.room_name}</h2>
                                 <p className="chat-preview" style={{ color: "var(--primary)" }}>Secure E2EE Channel</p>
@@ -79,7 +79,7 @@ export default function ChatArea() {
 
                             <div style={{ display: "flex", gap: "8px", position: "relative" }}>
                                 <button className="icon-btn" id="chat-options-btn" aria-label="Menu" title="Menu"
-                                    onClick={() => { setRoomSettingsMenu( !roomSettingsMenu ) }}>
+                                    onClick={() => { setRoomSettingsMenu(!roomSettingsMenu) }}>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <circle cx="12" cy="5" r="1.5" />
                                         <circle cx="12" cy="12" r="1.5" />
@@ -104,7 +104,7 @@ export default function ChatArea() {
                                             };
                                             socket.emit("message", request_payload);
 
-                                            setRoomSettingsMenu( false );
+                                            setRoomSettingsMenu(false);
                                         }}
                                         data-i18n="clear_chat" style={{ color: "var(--error)" }}>Delete Contact</div>
                                 </div>
@@ -148,16 +148,20 @@ export default function ChatArea() {
                                                         </div>
                                                     )}
                                                     <div className="message-content-wrapper">
-                                                        <div className="message-bubble">
-                                                            <div className="message-text">{msg.content}</div>
-                                                            {isMe &&
+                                                        {/* Added conditional class 'deleted-message' here */}
+                                                        <div className={`message-bubble ${msg.is_del ? 'deleted-message' : ''}`}>
+                                                            <div className="message-text">
+                                                                {msg.is_del ? "This message was deleted" : msg.content}
+                                                            </div>
+
+                                                            {isMe && !msg.is_del && (
                                                                 <div className="message-bubble-footer">
                                                                     <div className="status-indicators">
                                                                         <div className={`status-dot ${msg.is_sent ? 'active' : ''}`}></div>
                                                                         <div className={`status-dot ${msg.is_delivered ? 'active' : ''}`}></div>
                                                                     </div>
                                                                 </div>
-                                                            }
+                                                            )}
                                                         </div>
                                                         <span className="message-time">{timeString}</span>
                                                     </div>
@@ -212,19 +216,19 @@ export default function ChatArea() {
                                 <p>
                                     You can no longer send messages to this room. The user might have been banned or removed you from their contacts.
                                     <button
-                                        onClick={() => { 
+                                        onClick={() => {
                                             const request_payload = {
-                                                type : IPayloadRequestType.REJOIN_REQUEST,
-                                                payload : 
+                                                type: IPayloadRequestType.REJOIN_REQUEST,
+                                                payload:
                                                 {
-                                                    room_public_id : activeRoomRef.current!.public_id,
-                                                    username : userState.username,
+                                                    room_public_id: activeRoomRef.current!.public_id,
+                                                    username: userState.username,
                                                 },
                                             };
-                                            
+
                                             socket.emit("message", request_payload);
                                         }}
-                                        
+
                                         style={{
                                             background: "none",
                                             border: "none",

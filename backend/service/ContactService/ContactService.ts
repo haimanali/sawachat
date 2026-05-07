@@ -1,4 +1,5 @@
 import { Repository } from "../../componantParams.js";
+import { IClient } from "../../domain/IClient.js";
 import { IRequest } from "../../domain/IRequest.js";
 import { IRoom } from "../../domain/IRoom.js";
 import { IServiceLayerResponse } from "../../responseFormat.js";
@@ -42,7 +43,14 @@ export class ContactService implements IContactService
                 success : false,
                 log_message : "Request has already been sent",
             };
-            
+
+        const is_full = await this.repository.Icontact_repo.checkRequestLimit(r_user_id, "contact");
+        if (is_full.data)
+            return {
+                success : is_full.data,
+                log_message : is_full.log_message,
+            };
+        
         const c_result = await this.repository.Icontact_repo.insertContactRequest(public_id, r_user_id, s_user_id);
         
         return {
@@ -70,8 +78,8 @@ export class ContactService implements IContactService
         return {success : true, log_message : "new contact has been added.."};
     }
 
-    public async performLoadRequests(user_id: number, cursor : Date | null): Promise<IServiceLayerResponse<IRequest []>> {
-        const c_result = await this.repository.Icontact_repo.getRequestsByUserID(user_id, cursor);
+    public async performLoadRequests(user_id: number): Promise<IServiceLayerResponse<IRequest []>> {
+        const c_result = await this.repository.Icontact_repo.getRequestsByUserID(user_id);
 
         return {success : true, data : c_result.data, log_message : "fetched requests by user id"};
     }
@@ -113,9 +121,21 @@ export class ContactService implements IContactService
                 log_message : isPending.log_message,
             };
         
+        const is_full = await this.repository.Icontact_repo.checkRequestLimit(user_id, "contact");
+        if (is_full.data)
+            return {
+                success : is_full.data,
+                log_message : is_full.log_message,
+            };
+
         const result = await this.repository.Icontact_repo.insertRejoinRequest(public_id, room_id, user_id, other_userid!);
 
         return {success : result.success, data : {request : result.data!, other_client : other_userid!}, log_message : result.log_message};
+    }
+
+    public async performGetContacts(user_id: number): Promise<IServiceLayerResponse<IClient[]>> {
+        const result = await this.repository.Icontact_repo.getContactsByUserId(user_id);
+        return result;
     }
 
     public async performGetRequest(req_public_id: string): Promise<IServiceLayerResponse<IRequest>> {

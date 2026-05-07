@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useSocket } from "../../../hooks/useSocket";
 import { IPayloadInterface, IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { apiCall } from "../../../services/apiCaller";
@@ -6,19 +6,25 @@ import RequestsTab from "./requestTab";
 import ChatRoomTab from "./chatRoomTab";
 import AddContactPOPUP from "../../popup/addContactPOPUP";
 import UserSettingsPOPUP from "../../popup/userSettingsPOPUP";
+import { ENotificationType } from "../../../interfaces/UI/notificationFormat";
+import NotificationDot from "../../../componets/notificationDot/NotificationDot";
+import UserAvatar from "../../../componets/avatar/userAvatar";
 
 export default function SideBar() {
 
     const {
         socket,
+        userState,
+        onlineStatus,
+        activeTab,
+        setActive,
         setSettingsPOPUP,
+        notifCountType,
         navigate,
         activeRoomSetup,
         setActiveRoomSetup,
         rooms,
     } = useSocket();
-
-    const [activeTab, setActive] = useState<"rooms" | "requests">("rooms");
 
 
     return (<>
@@ -37,37 +43,57 @@ export default function SideBar() {
             </div>
 
             {/* --- TAB NAVIGATOR --- */}
+
             <div className="tab-navigator" style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: "8px" }}>
+
+                {/* ROOMS TAB */}
                 <button
                     onClick={() => {
                         setActive("rooms");
-
                         if (!activeRoomSetup)
                             setActiveRoomSetup(rooms[0] || null);
                     }}
                     style={{
-                        flex: 1, padding: "12px", background: "none", cursor: "pointer",
+                        flex: 1, // Stretches the button to take exactly half the width
+                        padding: "12px",
+                        background: "none",
+                        cursor: "pointer",
                         border: "none",
                         borderBottom: activeTab === "rooms" ? "2px solid var(--primary)" : "none",
                         color: activeTab === "rooms" ? "var(--primary)" : "var(--text-sub)",
-                        fontWeight: activeTab === "rooms" ? "bold" : "normal"
+                        fontWeight: activeTab === "rooms" ? "bold" : "normal",
+                        display: "flex",           // Aligns text and dot
+                        alignItems: "center",      // Vertically centers them
+                        justifyContent: "center",  // Horizontally centers the group
+                        gap: "6px"                 // The magic spacing between text and dot
                     }}
                 >
                     Rooms
+                    {(notifCountType[ENotificationType.CREATE_CONTACT] > 0 || notifCountType[ENotificationType.RECEIVE_MESSAGE] > 0) && <NotificationDot />}
                 </button>
+
+                {/* REQUESTS TAB */}
                 <button
                     onClick={() => {
                         setActive("requests");
                     }}
                     style={{
-                        flex: 1, padding: "12px", background: "none", cursor: "pointer",
+                        flex: 1, // Stretches the button to take exactly half the width
+                        padding: "12px",
+                        background: "none",
+                        cursor: "pointer",
                         border: "none",
                         borderBottom: activeTab === "requests" ? "2px solid var(--primary)" : "none",
                         color: activeTab === "requests" ? "var(--primary)" : "var(--text-sub)",
-                        fontWeight: activeTab === "requests" ? "bold" : "normal"
+                        fontWeight: activeTab === "requests" ? "bold" : "normal",
+                        display: "flex",           // FIXED: Added missing flex
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px"
                     }}
                 >
                     Requests
+                    {notifCountType[ENotificationType.RECEIVE_REQUEST] > 0 && <NotificationDot />}
                 </button>
             </div>
 
@@ -75,15 +101,53 @@ export default function SideBar() {
             <div className="sidebar-content" style={{ flex: 1, overflowY: "auto" }}>
 
                 {/* Condition 1: REQUESTS TAB */}
-                {activeTab === "requests" && <RequestsTab/>}
+                {activeTab === "requests" && <RequestsTab />}
 
                 {/* Condition 2: ROOMS TAB */}
-                {activeTab === "rooms" && <ChatRoomTab/>}
+                {activeTab === "rooms" && <ChatRoomTab />}
 
             </div>
 
             {/* --- FOOTER --- */}
-            <div style={{ padding: "16px", borderTop: "1px solid var(--border)", marginTop: "auto" }}>
+            <div style={{
+                padding: "16px",
+                borderTop: "1px solid var(--border)",
+                marginTop: "auto",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between", // Pushes content apart
+                gap: "12px"
+            }}>
+                {/* Left Side: Avatar and Name Info */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+                    <UserAvatar
+                        mode={onlineStatus} // Or link to your actual status state
+                        nickname={userState?.nickname || "User"}
+                    />
+
+                    <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                        <span style={{
+                            fontWeight: "600",
+                            fontSize: "0.95rem",
+                            color: "var(--text-main)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                        }}>
+                            {userState?.nickname}
+                        </span>
+                        <span style={{
+                            fontSize: "0.8rem",
+                            opacity: 0.5,
+                            color: "var(--text-main)",
+                            whiteSpace: "nowrap"
+                        }}>
+                            @{userState?.username}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right Side: Logout Button */}
                 <div className="chat-item" id="logout-btn"
                     onClick={async () => {
                         const response: IPayloadInterface = await apiCall("http://localhost:3000/api/auth/session/logout", "POST");
@@ -92,23 +156,30 @@ export default function SideBar() {
                             if (socket) {
                                 socket.disconnect();
                             }
-
                             navigate("/");
                         }
-
                     }}
-                    style={{ color: "var(--error)", cursor: "pointer", display: "flex", gap: "8px", alignItems: "center" }}>
+                    style={{
+                        color: "var(--error)",
+                        cursor: "pointer",
+                        display: "flex",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        transition: "background 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 0, 0, 0.05)"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
-                    <strong data-i18n="logout_btn">Log out</strong>
                 </div>
             </div>
 
-                <AddContactPOPUP/>
-                <UserSettingsPOPUP/>
+            <AddContactPOPUP />
+            <UserSettingsPOPUP />
         </aside>
     </>);
 }

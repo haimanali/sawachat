@@ -55,6 +55,21 @@ export class SessionService implements ISessionService
         };
     }
 
+    public async performVerifyUserID (user_id : number) : Promise<IServiceLayerResponse<IClient>>
+    {
+        const cl_result = await this.repository.Iclient_repo.getClientByUserID(user_id);
+        
+        if(!cl_result.success)
+        {
+            return {success : false , log_message : "user doesn't exists"};
+        }
+
+        return{
+            success : true,
+            data : cl_result.data!,
+            log_message : "Account found, user logged in..",
+        };
+    }
 
     public async performVerifyUsername(username: string): Promise<IServiceLayerResponse<IClient>> {
         const cl_result = await this.repository.Iclient_repo.checkClientExist(username);
