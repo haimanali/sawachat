@@ -14,13 +14,12 @@ import { INotificationPublic } from '../interfaces/public/INotificationPublic';
 import { ENotificationType, IGlobalNotifCount, NotificationTypeUnion } from '../interfaces/UI/notificationFormat';
 import { INotificationState } from '../interfaces/UI/INotificationState';
 import { IContactState } from '../interfaces/UI/IContactState';
-import { apiCall } from '../services/apiCaller';
 
 
 
 const SocketContext = createContext<ISocketContext | undefined>(undefined);
 
-export const SocketProvider = ({ children, userState, status, navigate, showToast }: { children: ReactNode, userState: IClientPublic, status: "authorized" | "loading", navigate: NavigateFunction, showToast(msg: string): void }) => {
+export const SocketProvider = ({ children, userState, setUserState, status, navigate, showToast }: { children: ReactNode, userState: IClientPublic, setUserState: React.Dispatch<React.SetStateAction<IClientPublic | null>>, status: "authorized" | "loading", navigate: NavigateFunction, showToast(msg: string): void }) => {
 
 
     const socketRef = useRef<Socket | null>(null);
@@ -43,6 +42,8 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
     const [contacts, setContacts] = useState<Record<string, IContactState>>({});
 
     const [rooms, setRooms] = useState<IRoomPublic[]>([]);
+    const rooms_ref = useRef<IRoomPublic[]>([]);
+
     const [roomCache, setRoomCache] = useState<Record<string, IRoomCache>>({});
     const [hasMoreRooms, setHasMoreRooms] = useState<boolean>(true);
     const [activeRoomSetup, setActiveRoomSetup] = useState<IRoomPublic | null>(null);
@@ -74,7 +75,9 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
     const [activeTab, setActive] = useState<"rooms" | "requests">("rooms");
 
-
+    useEffect( () => {
+        rooms_ref.current = rooms;
+    }, [rooms]);
 
     useEffect(() => {
         const updateActivity = () => {
@@ -262,7 +265,7 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                 setNotifications((prev) => {
                     const type = notification_item.payload.type;
 
-                    let entityId;
+                    let entityId: string;
 
                     switch (type) {
                         case ENotificationType.CREATE_CONTACT:
@@ -420,50 +423,55 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
             });
 
             ws.on(IPayloadResponseType.ONSEND_MESSAGE, async (payload: IPayloadInterface<{ enc_message: IMessagePublic, iv: string }>) => {
-
                 const enc_message = payload.data!.enc_message;
                 const iv = payload.data!.iv;
-
-                if (enc_message.room_public_id !== activeRoomRef.current?.public_id)
-                    return;
+                const roomID = enc_message.room_public_id;
+                const isActiveRoom = activeRoomRef.current?.public_id === roomID;
 
                 const crypto_key = await initKey(activeRoomRef.current!.enc_key);
-                const dercrypted_text = await msgDecryption(enc_message.content, crypto_key, iv);
+                const decrypted_text = await msgDecryption(enc_message.content, crypto_key, iv);
 
-                let message: IMessagePublic =
-                {
+                const message: IMessagePublic = {
                     ...enc_message,
                     is_sent: true,
                     is_delivered: false,
                     is_read: false,
-                    content: dercrypted_text,
-                }
+                    content: decrypted_text,
+                };
 
-                setMessages((prev) => [...prev, message]);
+                setRooms((prev) => {
+                    const updatedRooms = prev.map((room) => {
+                        if (room.public_id === roomID) {
+                            return {
+                                ...room,
+                                unread_msgs: room.unread_msgs,
+                                last_msg_date: new Date(),
+                                last_message_payload: enc_message
+                            };
+                        }
+                        return room;
+                    });
+
+                    return [...updatedRooms].sort((a, b) =>
+                        new Date(b.last_msg_date).getTime() - new Date(a.last_msg_date).getTime()
+                    );
+                });
 
                 setRoomCache((prev) => {
-                    const curr_room = prev[enc_message.room_public_id];
-
-                    if (!curr_room)
-                        return prev;
-
+                    const curr_room = prev[roomID];
+                    if (!curr_room) return prev;
                     return {
                         ...prev,
-                        [enc_message.room_public_id]: {
+                        [roomID]: {
                             ...curr_room,
                             messages: [...curr_room.messages, message],
                         },
                     };
                 });
 
-
-                setRooms((prev) =>
-                    prev.map((room) =>
-                        room.public_id === enc_message.room_public_id ?
-                            { ...room, unread_msgs: onlineStatus === 'online' && activeRoomRef.current!.public_id === enc_message.room_public_id ? room.unread_msgs : room.unread_msgs + 1, last_msg_date: new Date(), last_message_payload: enc_message } :
-                            room));
-
-
+                if (isActiveRoom) {
+                    setMessages((prev) => [...prev, message]);
+                }
             });
 
             ws.on(IPayloadResponseType.ONDELETE_MESSAGE, (payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string }>) => {
@@ -498,71 +506,76 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
 
             ws.on(IPayloadResponseType.ONRECEIVE_MESSAGE, async (payload: IPayloadInterface<{ enc_message: IMessagePublic, iv: string }>) => {
                 const enc_message = payload.data!.enc_message;
+                const roomID = enc_message.room_public_id;
+                const isActiveRoom = activeRoomRef.current?.public_id === roomID;
 
-                const request_payload = {
+                console.log(activeRoomRef.current!.public_id);
+                console.log(roomID);
+
+
+                ws.emit("message", {
                     type: IPayloadRequestType.MESSAGE_RECEIVED,
                     payload: {
                         msg_public_id: enc_message.public_id,
-                        room_public_id: enc_message.room_public_id,
+                        room_public_id: roomID,
                         s_username: enc_message.username,
                         is_delivered: true,
                     },
-                };
-
-                ws.emit("message", request_payload);
-
-                setRoomCache((prev) => {
-                    const curr_room = prev[enc_message.room_public_id];
-
-                    if (!curr_room)
-                        return prev;
-
-                    return {
-                        ...prev,
-                        [enc_message.room_public_id]: {
-                            ...curr_room,
-                            messages: [...curr_room.messages, message],
-                        },
-                    };
                 });
 
-                if (enc_message.room_public_id !== activeRoomRef.current?.public_id) {
-                    setNotifCountType((prev) => {
-                        let total_msg = prev[ENotificationType.RECEIVE_MESSAGE];
-                        total_msg += 1;
-
-                        return {
-                            ...prev,
-                            [ENotificationType.RECEIVE_MESSAGE]: total_msg
-                        };
+                setRooms((prev) => {
+                    const updatedRooms = prev.map((room) => {
+                        if (room.public_id === roomID) {
+                            return {
+                                ...room,
+                                unread_msgs: isActiveRoom ? room.unread_msgs : room.unread_msgs + 1,
+                                last_msg_date: new Date(),
+                                last_message_payload: enc_message
+                            };
+                        }
+                        return room;
                     });
 
-                    return;
+                    return [...updatedRooms].sort((a, b) =>
+                        new Date(b.last_msg_date).getTime() - new Date(a.last_msg_date).getTime()
+                    );
+                });
+
+                if (!isActiveRoom) {
+                    setNotifCountType((prev) => ({
+                        ...prev,
+                        [ENotificationType.RECEIVE_MESSAGE]: prev[ENotificationType.RECEIVE_MESSAGE] + 1
+                    }));
                 }
 
-                const iv = payload.data!.iv;
+                const enc_key = isActiveRoom ? activeRoomRef.current?.enc_key : rooms_ref.current.find( r => r.public_id === enc_message.room_public_id)?.enc_key;
+                if (!enc_key)
+                    return;
 
-                const crypto_key = await initKey(activeRoomRef.current!.enc_key);
-                const dercrypted_text = await msgDecryption(enc_message.content, crypto_key, iv);
-
-                let message: IMessagePublic =
-                {
+                const crypto_key = await initKey(enc_key);
+                const decrypted_text = await msgDecryption(enc_message.content, crypto_key, payload.data!.iv);
+                
+                const fullMessage: IMessagePublic = {
                     ...enc_message,
                     is_sent: true,
                     is_delivered: true,
                     is_read: false,
-                    content: dercrypted_text,
-                }
+                    content: decrypted_text,
+                };
+                
+                setRoomCache((prev) => {
+                    const curr_room = prev[roomID];
+                    if (!curr_room) return prev;
+                    return {
+                        ...prev,
+                        [roomID]: { ...curr_room, messages: [...curr_room.messages, fullMessage] }
+                    };
+                });
+                
+                if (!isActiveRoom)
+                    return;
 
-                setMessages((prev) => [...prev, message]);
-
-
-                setRooms((prev) =>
-                    prev.map((room) =>
-                        room.public_id === enc_message.room_public_id ?
-                            { ...room, unread_msgs: onlineStatus === 'online' && activeRoomRef.current!.public_id === enc_message.room_public_id ? room.unread_msgs : room.unread_msgs + 1, last_msg_date: new Date(), last_message_payload: enc_message } :
-                            room));
-
+                setMessages((prev) => [...prev, fullMessage]);
             });
 
             ws.on(IPayloadResponseType.ONMESSAGE_RECEIVED, (payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string, is_delivered: boolean }>) => {
@@ -755,6 +768,13 @@ export const SocketProvider = ({ children, userState, status, navigate, showToas
                     };
                 });
             });
+
+
+            ws.on(IPayloadResponseType.ONBAN, (payload: IPayloadInterface) => {
+                navigate(`/u/${userState.username}/ban`, { replace: true });
+                setUserState(null);
+                socketRef.current?.disconnect();
+            })
 
 
             ws.on("connect", () => {

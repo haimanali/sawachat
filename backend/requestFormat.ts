@@ -29,17 +29,17 @@ export enum IPayloadRequestType
 //stateless schema
 export const login_schema = z.object({
     auto_login : z.boolean().default(false),
-    username : z.string().min(2).max(16),
-    password : z.string().min(8),
+    username : z.string(),
+    password : z.string(),
 });
 
 export type ILoginRequest = z.infer<typeof login_schema>;
 
 
 export const signup_schema = z.object({
-    username : z.string().min(2).max(16),
-    nickname : z.string().max(8),
-    password : z.string().min(8),
+    username : z.string(),
+    nickname : z.string(),
+    password : z.string(),
 });
 
 export type ISignUpRequest = z.infer<typeof signup_schema>;

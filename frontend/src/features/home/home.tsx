@@ -16,12 +16,12 @@ export default function Home() {
         setTimeout(() => setToastMsg(""), ms);
     };
     
-    const { userState, status, navigate} = useProtected();
+    const { userState, setUserState, status, navigate} = useProtected();
 
     return (
         <>
             <div className="chat-container">
-                <SocketProvider userState={userState!} status={status} navigate={navigate} showToast={showToast}>
+                <SocketProvider userState={userState!} status={status} setUserState= {setUserState} navigate={navigate} showToast={showToast}>
                     <SideBar/>
                     <ChatArea/>
                 </SocketProvider>

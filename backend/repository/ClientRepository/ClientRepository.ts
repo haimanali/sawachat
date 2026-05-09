@@ -66,14 +66,14 @@ export class ClientRepository implements IClientRepository
 
     public async getClientBySessionID(session_id: string): Promise<IRepositoryLayerResponse<IClient>> {
         const sql = 
-        "select u.user_id, u.username, u.nickname, u.hash_pass from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW()";
+        "select u.user_id, u.username, u.nickname, u.hash_pass from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW() and u.is_ban = false";
         
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [session_id]);
 
         if (result.count <= 0)
             return {
                 success : false,
-                log_message : "user session was not found",
+                log_message : "User session was not found due to expiration or ban",
             };
 
         const client_record = result.data[0];
@@ -133,7 +133,7 @@ export class ClientRepository implements IClientRepository
     }
 
     public async validateClient(username: string, password: string): Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select user_id, username, nickname, hash_pass from Client where username = ?";
+        const sql = "select user_id, username, nickname, hash_pass, is_ban from Client where username = ? and is_ban = false";
 
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
         
@@ -154,7 +154,7 @@ export class ClientRepository implements IClientRepository
             data : {
                 user_id : client_record.user_id, 
                 username : client_record.username, 
-                nickname : client_record.nickname
+                nickname : client_record.nickname,
             }, 
             log_message : "username is valid"
         } 
@@ -224,7 +224,7 @@ export class ClientRepository implements IClientRepository
 
 
     public async getClientByUserID(user_id: number) : Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select * from Client where user_id = ?";
+        const sql = "select * from Client where user_id = ? and is_ban = false";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [user_id]);
 
         if (result.count <= 0)

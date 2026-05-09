@@ -121,7 +121,7 @@ export class RoomRepository implements IRoomRepository
 
         public async getRoomsByUserID(user_id : number, cursor : Date | null): Promise<IRepositoryLayerResponse<IRoom []>> 
         {
-            let sql = `select cr.room_id, BIN_TO_UUID(cr.public_id) as public_id, HEX(cr.enc_key) as enc_key, u.nickname as room_name, u.username as room_subname, cr.type, cr.created_at, other.is_active, cr.last_msg_date, cr.last_message_payload,
+            let sql = `select cr.room_id, BIN_TO_UUID(cr.public_id) as public_id, HEX(cr.enc_key) as enc_key, CASE WHEN u.is_ban = true THEN 'User_Banned' ELSE u.nickname END as room_name, u.username as room_subname, cr.type, cr.created_at, other.is_active, cr.last_msg_date, cr.last_message_payload,
             (select count(*) from Message m where m.room_id = curr.room_id and m.created_at > curr.last_read_at) as unread_msgs
             from RoomMembers curr join ChatRoom cr on curr.room_id = cr.room_id 
             join RoomMembers other on other.room_id = curr.room_id and other.user_id != curr.user_id

@@ -59,8 +59,9 @@ export enum IPayloadResponseType
     ONLOAD_CONTACTS = "onload_contacts",
     ONAUTH_FAIL = "onauth_fail",
     ONDELETE_MESSAGE = "ondelete_message",
+    ONBAN = "onban",
+    
     MESSAGE_DELELTED = "message has been deleted",
-
 }
 
 export interface IPayloadInterface<T = void>

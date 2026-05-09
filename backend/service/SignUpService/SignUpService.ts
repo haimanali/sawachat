@@ -29,7 +29,7 @@ export class SignUpService implements ISignUpService
             
             if(c_result.success)
             {
-                return {success : false , log_message : "user exists, please try to login..."};
+                return {success : false , log_message : "either User exists / account has been suspended"};
             }
    
             const r_result = await this.repository.Iclient_repo.insertClientRecord(username, nickname, password);

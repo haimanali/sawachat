@@ -5,6 +5,7 @@ import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { useSocket } from "../../../hooks/useSocket";
 import { IMessagePublic } from "../../../interfaces/public/IMessagePublic";
 import UserAvatar from "../../../componets/avatar/userAvatar";
+import { ENotificationType } from "../../../interfaces/UI/notificationFormat";
 
 export default function ChatArea() {
 
@@ -18,7 +19,7 @@ export default function ChatArea() {
         userState,
         onlineStatus,
         contacts,
-        roomSettingsMenu, setRoomSettingsMenu
+        roomSettingsMenu, setRoomSettingsMenu, setNotifCountType, setNotifications, setRooms, notifications
     } = useSocket();
 
     const messageEnd_anchor = useRef<HTMLDivElement | null>(null);
@@ -52,10 +53,55 @@ export default function ChatArea() {
 
     }, [messages]);
 
+    const handleNotification = () => {
+
+        if (!document.hasFocus() || !activeRoomRef.current)
+            return;
+
+        const room_public_id = activeRoomRef.current!.public_id;
+
+        const room_unread_msgs = activeRoomRef.current!.unread_msgs;
+        const room_notif_obj = notifications[ENotificationType.CREATE_CONTACT]?.[room_public_id];
+
+        if (room_notif_obj) {
+            setNotifCountType((prev) => ({
+                ...prev,
+                [ENotificationType.CREATE_CONTACT]: Math.max(0, prev[ENotificationType.CREATE_CONTACT] - 1),
+            }));
+
+            setNotifications((prev) => {
+                const currentContacts = prev[ENotificationType.CREATE_CONTACT] || {};
+                const { [room_public_id]: _, ...rest } = currentContacts;
+                return { ...prev, [ENotificationType.CREATE_CONTACT]: rest };
+            });
+
+            socket.emit("message", {
+                type: IPayloadRequestType.MARK_NOTIF_READ,
+                payload: { notif_public_id: room_notif_obj.public_id },
+            });
+        }
+
+        if (room_unread_msgs > 0) {
+            setNotifCountType((prev) => ({
+                ...prev,
+                [ENotificationType.RECEIVE_MESSAGE]: Math.max(0, prev[ENotificationType.RECEIVE_MESSAGE] - room_unread_msgs),
+            }));
+
+            setRooms((prev) =>
+                prev.map((r) => r.public_id === room_public_id ? { ...r, unread_msgs: 0 } : r)
+            );
+
+            socket.emit("message", {
+                type: IPayloadRequestType.UPDATE_LAST_READ,
+                payload: { room_public_id: room_public_id },
+            });
+        }
+    };
+
 
     return (
         <>
-            <main className="chat-main">
+            <main className="chat-main" onMouseMove={ handleNotification }>
 
                 {!activeRoomSetup ? (
 

@@ -31,6 +31,7 @@ export enum IPayloadResponseType
 
     ONDELETE_MESSAGE = "ondelete_message",
     ONAUTH_FAIL = "onauth_fail",
+    ONBAN = "onban",
 
     MESSAGE_DELELTED = "message has been deleted",
     MAX_STRIKE = 3,

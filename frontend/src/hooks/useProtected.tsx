@@ -59,7 +59,7 @@ export const ProtectedProvider = ({ children }: { children: ReactNode }) => {
 
     return (
 
-        <ProtectedContext.Provider value={{ userState, status, navigate }}>
+        <ProtectedContext.Provider value={{ userState, setUserState, status, navigate }}>
             {children}
         </ProtectedContext.Provider>
     );

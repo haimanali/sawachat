@@ -9,6 +9,8 @@ import Home from "./features/home/home"
 import "./assets/style.css"
 import { AppProvider } from './hooks/useApp';
 import { ProtectedProvider } from './hooks/useProtected';
+import Ban from './features/auth/ban/ban';
+import NotFound from './features/notFound/notFound';
 
 
 function App() {
@@ -19,17 +21,19 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/u/:username" element={
 
-            <ProtectedProvider>
-              <Home />
-            </ProtectedProvider>
+          <Route path="/u/:username">
+            <Route index element={
+              <ProtectedProvider>
+                <Home />
+              </ProtectedProvider>
+            } />
 
-          } />
+            <Route path="ban" element={<Ban />} />
+          </Route>
+
           <Route path="/error" element={<Error />} />
-
-
-          <Route path="*" element={<Error />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AppProvider>
     </BrowserRouter>

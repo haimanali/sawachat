@@ -6,4 +6,5 @@ export interface IProtectedContext
     userState : IClientPublic | null,
     status : "authorized" | "loading",
     navigate : NavigateFunction,
+    setUserState : React.Dispatch<React.SetStateAction<IClientPublic | null>>,
 }
