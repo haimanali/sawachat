@@ -1,13 +1,15 @@
 import { Repository } from "../../componantParams.js";
 import { IRoomService } from "./IRoomService.js";
 import { v4 } from 'uuid';
-import { IServiceLayerResponse } from "../../responseFormat.js";
+import { IPayloadResponseType, IServiceLayerResponse } from "../../responseFormat.js";
 import { IRoom } from "../../domain/IRoom.js";
 import crypto from "crypto";
 import { IClient } from "../../domain/IClient.js";
 import { IMessagePublic } from "../../public/IMessagePublic.js";
+import { IRoomPublic } from "../../public/IRoomPublic.js";
 
 
+// this service handles chat rooms and messaging logic
 export class RoomService implements IRoomService
 {
 
@@ -29,19 +31,21 @@ export class RoomService implements IRoomService
         this.repository = repository;
     }
 
-    //overrides
 
+    // we generate a random 32 byte hex string to use as the encryption key for the room
     public generateRoomkey() : string
     {
         return crypto.randomBytes(32).toString("hex");
     }
 
+    // generates a unique uuid for the room
     public generatePublicID() : string
     {
         const uuid = v4();
         return uuid;
     }
 
+    // this adds multiple users to a room at once
     public async performAddMembers(members : number[], room_id : number) : Promise<IServiceLayerResponse>
     {
         await Promise.all(members.map((member) => 
@@ -51,11 +55,13 @@ export class RoomService implements IRoomService
         return {success : true, log_message : "members have been added successfully.."};
     }
 
+    // this creates the actual room entry in the database
     public async performCreateRoom(public_id : string, enc_key : string, type : string): Promise<IServiceLayerResponse<IRoom>> {
         const r_result = await this.repository.Iroom_repo.insertChatRoomRecord(public_id, enc_key, type);
         return { success : true, data : r_result.data, log_message : "New Room has been created"};
     }
 
+    // this gets the room details using its public id
     public async performGetRoom(public_id: string): Promise<IServiceLayerResponse<IRoom>> 
     {
         const r_result = await this.repository.Iroom_repo.getRoomByPublicID(public_id);   
@@ -66,28 +72,51 @@ export class RoomService implements IRoomService
         return { success : true, data : r_result.data, log_message : "got room by public_id"};
     }
 
+    // this loads the list of chat rooms for a specific user
     public async performLoadRooms(user_id: number, cursor : Date | null): Promise<IServiceLayerResponse<{total_unread : number, rooms : IRoom[]}>> 
     {
         const r_result = await this.repository.Iroom_repo.getRoomsByUserID(user_id, cursor);
         const m_result = await this.repository.Imessage_repo.getTotalUnread(user_id);
         
+        const rooms = r_result.data?.map(room => {
+            if (room.actual_is_del && room.last_message_payload) {
+                return {
+                    ...room,
+                    last_message_payload: {
+                        ...room.last_message_payload,
+                        is_del: true,
+                        content: IPayloadResponseType.MESSAGE_DELETED as string
+                    }
+                };
+            }
+            return room;
+        }) || [];
+
         return {
             success : r_result.success,
-            data : {total_unread : m_result.data! , rooms : r_result.data!},
+            data : {total_unread : m_result.data! , rooms : rooms},
             log_message : "fetched 10 user rooms",
         };
     }
 
+    // this updates the preview text of the room whenever a new message is sent
     public async performUpdateLastMessage(message: IMessagePublic, room_id : number): Promise<IServiceLayerResponse> {
         const result = await this.repository.Iroom_repo.updateChatRoomPreview(message, room_id);
         return { success : true, log_message : result.log_message};
     }
 
+    public async performDeleteLastMessage(room_id: number, public_id: string): Promise<IServiceLayerResponse> {
+        const result = await this.repository.Iroom_repo.deleteLastMessagePreview(room_id, public_id);
+        return result;
+    }
+
+    // this updates the last read timestamp for a user in a room
     public async performUpdateLastRead(user_id: number, room_id: number): Promise<IServiceLayerResponse> {
         const result = await this.repository.Iroom_repo.updateRoomMemberLastRead(user_id, room_id);
         return {success : result.success, log_message : result.log_message};            
     }
 
+    // this handles when a user leaves a chat or deletes a contact
     public async performLeaveContact(room_id: number, user_id : number): Promise<IServiceLayerResponse<IClient []>> {
         
         const remove_result = await this.repository.Iroom_repo.setRoomMemberActivity(false, room_id, user_id);
@@ -111,6 +140,7 @@ export class RoomService implements IRoomService
         };
     }
 
+    // this reactivates a room for a user
     public async performActivateContact(user_id: number, room_id: number): Promise<IServiceLayerResponse> {
         const r_result = await this.repository.Iroom_repo.setRoomMemberActivity(true, room_id, user_id);
         return {success : r_result.success, log_message : r_result.log_message};

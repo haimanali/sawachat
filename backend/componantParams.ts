@@ -14,6 +14,8 @@ import { ISessionService } from "./service/SessionService/ISessionService.js";
 import { ISignUpService } from "./service/SignUpService/ISignUpService.js";
 
 
+// this file groups all our services and repositories together
+// so we can pass them around easily in the code
 export interface Services
 {
         readonly Iroom_service : IRoomService,

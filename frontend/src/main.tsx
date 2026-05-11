@@ -11,6 +11,8 @@ import { AppProvider } from './hooks/useApp';
 import { ProtectedProvider } from './hooks/useProtected';
 import Ban from './features/auth/ban/ban';
 import NotFound from './features/notFound/notFound';
+import Help from './features/help/help';
+import Policies from './features/policies/policies';
 
 
 function App() {
@@ -33,6 +35,9 @@ function App() {
           </Route>
 
           <Route path="/error" element={<Error />} />
+          
+          <Route path="/help" element={<Help />} />
+          <Route path="/policies" element={<Policies />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppProvider>

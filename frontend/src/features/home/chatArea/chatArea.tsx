@@ -3,11 +3,15 @@ import { msgEncrytion } from "../../../services/msgEncrytion";
 import { initKey } from "../../../services/initKey";
 import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { useSocket } from "../../../hooks/useSocket";
+import { useApp } from "../../../hooks/useApp";
 import { IMessagePublic } from "../../../interfaces/public/IMessagePublic";
 import UserAvatar from "../../../componets/avatar/userAvatar";
 import { ENotificationType } from "../../../interfaces/UI/notificationFormat";
 
-export default function ChatArea() {
+// this is where the actual chat happens
+// it shows the messages and the input box to type new ones
+export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void }) {
+    const { readReceipts, t } = useApp();
 
     const {
         socket,
@@ -24,6 +28,68 @@ export default function ChatArea() {
 
     const messageEnd_anchor = useRef<HTMLDivElement | null>(null);
     const [msgInput, setMsgInput] = useState<string>("");
+    
+    // UI states
+    const [contactInfoModal, setContactInfoModal] = useState<boolean>(false);
+
+    // Wallpaper color state
+    const [roomWallpaper, setRoomWallpaper] = useState<string | null>(null);
+    const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+    // wallpaper options for the chat background
+    const wallpaperOptions = [
+        { label: "None", value: "" },
+        { label: "Ocean", value: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)" },
+        { label: "Night", value: "linear-gradient(135deg, #0B0E18, #1a1c2e, #0B0E18)" },
+        { label: "Midnight", value: "linear-gradient(135deg, #020024, #090979, #00d4ff20)" },
+        { label: "Aurora", value: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)" },
+        { label: "Sunset", value: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" },
+        { label: "Ember", value: "linear-gradient(135deg, #1a0a0a, #2d1117, #1a0a0a)" },
+        { label: "Forest", value: "linear-gradient(135deg, #0a1a0f, #112d1a, #0a1a0f)" },
+    ];
+
+    useEffect(() => {
+        if (activeRoomRef.current) {
+            const saved = localStorage.getItem(`wallpaper_${activeRoomRef.current.public_id}`);
+            setRoomWallpaper(saved);
+        }
+    }, [activeRoomRef.current?.public_id]);
+
+    const applyWallpaper = (value: string) => {
+        if (activeRoomRef.current) {
+            if (value) {
+                localStorage.setItem(`wallpaper_${activeRoomRef.current.public_id}`, value);
+            } else {
+                localStorage.removeItem(`wallpaper_${activeRoomRef.current.public_id}`);
+            }
+            setRoomWallpaper(value || null);
+        }
+        setShowWallpaperPicker(false);
+    };
+
+    // this lets you download your chat history as a text file
+    const handleExportChat = () => {
+        if (!activeRoomSetup) return;
+        
+        let content = `SawaChat Export - ${activeRoomSetup.room_name}\n`;
+        content += `Generated on: ${new Date().toLocaleString()}\n\n`;
+        
+        messages.forEach(msg => {
+            const time = new Date(msg.created_at).toLocaleString();
+            content += `[${time}] ${msg.nickname}: ${msg.content}\n`;
+        });
+        
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `SawaChat_${activeRoomSetup.room_name.replace(/\s+/g, "_")}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        setRoomSettingsMenu(false);
+    };
 
     useEffect(() => {
         if (onlineStatus !== "online" || !activeRoomRef.current || messages.length === 0)
@@ -33,6 +99,7 @@ export default function ChatArea() {
             type: IPayloadRequestType.UPDATE_LAST_READ,
             payload: {
                 room_public_id: activeRoomRef.current!.public_id,
+                read_receipts: readReceipts,
             },
         };
         socket.emit("message", payload);
@@ -93,7 +160,7 @@ export default function ChatArea() {
 
             socket.emit("message", {
                 type: IPayloadRequestType.UPDATE_LAST_READ,
-                payload: { room_public_id: room_public_id },
+                payload: { room_public_id: room_public_id, read_receipts: readReceipts },
             });
         }
     };
@@ -109,7 +176,7 @@ export default function ChatArea() {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: "48px", height: "48px", marginBottom: "16px" }}>
                             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                         </svg>
-                        <p data-i18n="empty_state">Start Your Secure EE2E Messaging Journey.</p>
+                        <p>{t('empty_state')}</p>
                     </div>
 
                 ) : (
@@ -117,10 +184,23 @@ export default function ChatArea() {
                     <>
                         {/* 1. THE HEADER (Always visible if room is selected) */}
                         <header className="chat-header">
-                            <UserAvatar mode={contacts[activeRoomSetup.room_subname]?.onlineState || "offline"} nickname={contacts[activeRoomSetup.room_subname]?.client.nickname || "User"} />
+                            {/* Mobile hamburger — only visible on small screens */}
+                            <button 
+                                className="icon-btn mobile-menu-btn" 
+                                onClick={onOpenSidebar} 
+                                aria-label="Open sidebar"
+                                style={{ flexShrink: 0 }}
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width: "22px", height: "22px"}}>
+                                    <line x1="3" y1="6" x2="21" y2="6"/>
+                                    <line x1="3" y1="12" x2="21" y2="12"/>
+                                    <line x1="3" y1="18" x2="21" y2="18"/>
+                                </svg>
+                            </button>
+                            <UserAvatar mode={contacts[activeRoomSetup.room_subname]?.onlineState || "offline"} nickname={contacts[activeRoomSetup.room_subname]?.client.nickname || "User"} image={contacts[activeRoomSetup.room_subname]?.client.avatar} />
                             <div className="chat-meta">
                                 <h2 className="chat-name" id="active-chat-name">{activeRoomSetup.room_name}</h2>
-                                <p className="chat-preview" style={{ color: "var(--primary)" }}>Secure E2EE Channel</p>
+                                <p className="chat-preview" style={{ color: "var(--primary)" }}>Encryption at Rest (EaR) Channel</p>
                             </div>
 
                             <div style={{ display: "flex", gap: "8px", position: "relative" }}>
@@ -134,11 +214,15 @@ export default function ChatArea() {
                                 </button>
                                 {/* Dropdown */}
                                 <div className={`dropdown-menu ${roomSettingsMenu ? "active" : ""}`} id="chat-dropdown">
-                                    <div className="dropdown-item" data-i18n="contact_info">Contact Info</div>
-                                    <div className="dropdown-item" data-i18n="change_wallpaper">Change Wallpaper</div>
-                                    <div className="dropdown-item" data-i18n="archive_chat">Archive Chat</div>
-                                    <div className="dropdown-item" id="export-chat-btn" data-i18n="export_chat">Export Chat</div>
-                                    <div className="dropdown-item" data-i18n="clear_chat" style={{ color: "var(--error)" }}>Block</div>
+                                    <div className="dropdown-item" onClick={() => {
+                                        setContactInfoModal(true);
+                                        setRoomSettingsMenu(false);
+                                    }}>{t('contact_info')}</div>
+                                    <div className="dropdown-item" onClick={() => {
+                                        setShowWallpaperPicker(true);
+                                        setRoomSettingsMenu(false);
+                                    }}>{t('change_wallpaper')}</div>
+                                    <div className="dropdown-item" id="export-chat-btn" onClick={handleExportChat}>{t('export_chat')}</div>
                                     <div className="dropdown-item"
                                         onClick={() => {
                                             const request_payload = {
@@ -152,13 +236,20 @@ export default function ChatArea() {
 
                                             setRoomSettingsMenu(false);
                                         }}
-                                        data-i18n="clear_chat" style={{ color: "var(--error)" }}>Delete Contact</div>
+                                        style={{ color: "var(--error)" }}>{t('delete_contact')}</div>
                                 </div>
                             </div>
                         </header>
 
                         {/* 2. THE MESSAGES AREA (Toggle between Loader and List) */}
-                        <div className="messages-area" id="messages-area">
+                        <div className="chat-messages" id="chat-messages" style={{
+                            background: roomWallpaper ? roomWallpaper : "none",
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                            position: "relative"
+                        }}>
+                            {roomWallpaper && <div style={{position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.2)", zIndex: 0}}></div>}
+                            
                             {loadingMessages ? (
                                 <div className="chat-loader-container is-loading" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
                                     <div className="btn-loader-wrap">
@@ -168,12 +259,12 @@ export default function ChatArea() {
                                             border: "4px solid rgba(255, 255, 255, 0.1)",
                                             borderTopColor: "var(--primary)",
                                             borderRadius: "50%",
-                                            animation: "spin 1s linear infinite" // ensure you have a spin keyframe in your CSS
+                                            animation: "spin 1s linear infinite"
                                         }}></div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="messages-list">
+                                <div className="messages-list" style={{zIndex: 1, position: "relative"}}>
                                     {messages.length === 0 ? (
                                         <div className="empty-state-text" style={{ textAlign: "center", color: "var(--text-muted)", marginTop: "20px" }}>
                                             No messages here yet. Start the conversation!
@@ -194,17 +285,16 @@ export default function ChatArea() {
                                                         </div>
                                                     )}
                                                     <div className="message-content-wrapper">
-                                                        {/* Added conditional class 'deleted-message' here */}
                                                         <div className={`message-bubble ${msg.is_del ? 'deleted-message' : ''}`}>
                                                             <div className="message-text">
-                                                                {msg.is_del ? "This message was deleted" : msg.content}
+                                                                {msg.is_del ? t('msg_deleted') : msg.content}
                                                             </div>
 
                                                             {isMe && !msg.is_del && (
                                                                 <div className="message-bubble-footer">
                                                                     <div className="status-indicators">
                                                                         <div className={`status-dot ${msg.is_sent ? 'active' : ''}`}></div>
-                                                                        <div className={`status-dot ${msg.is_delivered ? 'active' : ''}`}></div>
+                                                                        <div className={`status-dot ${msg.is_read ? 'active' : ''}`}></div>
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -223,6 +313,7 @@ export default function ChatArea() {
                         {/* 3. THE INPUT AREA (Toggle between Input Box and Deactivated Banner) */}
                         {msgInputDOM ? (
                             <form className="chat-input-area" id="message-form"
+                                style={{ zIndex: 1, display: "flex" }}
                                 onSubmit={async (e) => {
                                     e.preventDefault();
                                     setMsgInput("");
@@ -240,9 +331,8 @@ export default function ChatArea() {
                                     };
 
                                     socket.emit("message", request_payload);
-                                }}
-                                style={{ display: "flex" }}>
-                                <input type="text" id="message-input" placeholder="Type a secure message..." value={msgInput} onChange={(e) => { setMsgInput(e.target.value) }} autoComplete="off" />
+                                }}>
+                                <input type="text" id="message-input" placeholder={t('type_msg')} value={msgInput} onChange={(e) => { setMsgInput(e.target.value) }} autoComplete="off" />
                                 <button className="btn-primary" type="submit" disabled={!msgInput}
                                     style={{ padding: "0%", background: "var(--primary)", color: "white", border: "none", borderRadius: "50%", width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }} aria-label="Send">
                                     <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: "20px", height: "20px", marginLeft: "2px" }}>
@@ -260,7 +350,7 @@ export default function ChatArea() {
                                 fontSize: "0.9rem"
                             }}>
                                 <p>
-                                    You can no longer send messages to this room. The user might have been banned or removed you from their contacts.
+                                    {t('banned_msg')}
                                     <button
                                         onClick={() => {
                                             const request_payload = {
@@ -284,7 +374,7 @@ export default function ChatArea() {
                                             marginLeft: "5px",
                                             fontWeight: "600"
                                         }}>
-                                        Ask to rejoin
+                                        {t('rejoin_ask')}
                                     </button>
                                 </p>
                             </div>
@@ -292,6 +382,115 @@ export default function ChatArea() {
                     </>
                 )}
             </main>
+
+            {/* --- Wallpaper Color Picker Modal --- */}
+            {showWallpaperPicker && (
+                <div className="modal-overlay active" style={{ zIndex: 1000 }} onClick={() => setShowWallpaperPicker(false)}>
+                    <div className="modal" style={{ width: "380px", padding: "28px 24px" }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                            <h2 style={{ fontSize: "1.3rem", fontWeight: 700 }}>{t('change_wallpaper')}</h2>
+                            <button className="icon-btn" onClick={() => setShowWallpaperPicker(false)}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, 1fr)",
+                            gap: "20px 16px",
+                        }}>
+                            {wallpaperOptions.map((opt) => (
+                                <div key={opt.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                                    <button
+                                        onClick={() => applyWallpaper(opt.value)}
+                                        title={opt.label}
+                                        style={{
+                                            width: "100%",
+                                            aspectRatio: "1",
+                                            borderRadius: "14px",
+                                            border: roomWallpaper === opt.value || (!roomWallpaper && !opt.value)
+                                                ? "2.5px solid var(--primary)"
+                                                : "2px solid var(--border)",
+                                            background: opt.value || "var(--bg)",
+                                            cursor: "pointer",
+                                            transition: "all 0.2s ease",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            boxShadow: roomWallpaper === opt.value || (!roomWallpaper && !opt.value)
+                                                ? "0 0 12px rgba(59, 158, 255, 0.3)"
+                                                : "none",
+                                        }}
+                                    >
+                                        {!opt.value && (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-sub)" strokeWidth="2" style={{width: "22px", height: "22px"}}>
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                    <span style={{
+                                        fontSize: "0.75rem",
+                                        color: roomWallpaper === opt.value || (!roomWallpaper && !opt.value) ? "var(--primary)" : "var(--text-sub)",
+                                        fontWeight: roomWallpaper === opt.value || (!roomWallpaper && !opt.value) ? 600 : 400,
+                                    }}>{opt.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- Contact Info Modal --- */}
+            {contactInfoModal && activeRoomSetup && contacts[activeRoomSetup.room_subname] && (
+                <div className="modal-overlay active" style={{ zIndex: 1000 }} onClick={() => setContactInfoModal(false)}>
+                    <div className="modal" style={{ width: "350px", textAlign: "center", padding: "32px 24px" }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "-16px" }}>
+                            <button className="icon-btn" onClick={() => setContactInfoModal(false)}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                            <div style={{ width: "100px", height: "100px", fontSize: "2.5rem" }}>
+                                <UserAvatar 
+                                    size="100%" 
+                                    nickname={contacts[activeRoomSetup.room_subname].client.nickname} 
+                                    image={contacts[activeRoomSetup.room_subname].client.avatar}
+                                    mode={contacts[activeRoomSetup.room_subname].onlineState}
+                                />
+                            </div>
+                        </div>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "4px" }}>
+                            {contacts[activeRoomSetup.room_subname].client.nickname}
+                        </h2>
+                        <p style={{ color: "var(--text-sub)", fontSize: "1rem", marginBottom: "24px" }}>
+                            @{contacts[activeRoomSetup.room_subname].client.username}
+                        </p>
+                        
+                        <div style={{ background: "var(--bg-subtle)", borderRadius: "8px", padding: "16px", textAlign: "left" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                                <span style={{ fontSize: "0.9rem", color: "var(--text)" }}>End-to-End Encrypted</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                <span style={{ fontSize: "0.9rem", color: "var(--text)" }}>Joined SawaChat</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

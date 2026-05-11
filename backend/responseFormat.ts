@@ -6,6 +6,9 @@ export enum IPayloadResponseType
     ONSEND_MESSAGE = "onsend_message",
     ONRECEIVE_MESSAGE = "onreceive_message",
     ONMESSAGE_RECEIVED = "onmessage_received",
+    ONMESSAGE_READ = "onmessage_read",
+    ONUPDATE_NICKNAME = "onupdate_nickname",
+    ONUPDATE_AVATAR = "onupdate_avatar",
 
     ONLOAD_CONTACTS = "onload_contacts",
     ONVERDICT_REQUEST = "onverdict_request_create_room",
@@ -33,7 +36,7 @@ export enum IPayloadResponseType
     ONAUTH_FAIL = "onauth_fail",
     ONBAN = "onban",
 
-    MESSAGE_DELELTED = "message has been deleted",
+    MESSAGE_DELETED = "message has been deleted",
     MAX_STRIKE = 3,
 }
 

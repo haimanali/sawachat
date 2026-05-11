@@ -1,4 +1,5 @@
-//server initializtion
+// this is the main entry point for the backend server
+// it sets up the database, all the services, and starts the express server
 import express from 'express'
 import http from 'http'
 //repository layer
@@ -67,6 +68,8 @@ const server = http.createServer(app);
 
 const db_conn = DBConn.getInstance();
 
+// we initialize all the repositories first for database access
+
 const Iclient_repo : IClientRepository = ClientRepository.getInstance(db_conn);
 const Iroom_repo : IRoomRepository = RoomRepository.getInstance(db_conn);
 const Icontact_repo : IContactRepository = ContactRepositiry.getInstance(db_conn);
@@ -84,7 +87,7 @@ const repository : Repository =
     Iai_repo : Iai_repo,
 }
 
-
+// then we setup the service layer to handle the business logic
 const Isignup_service : ISignUpService = SignUpService.getInstance(repository);
 const Ilogin_service : ILoginService = LoginService.getInstance(repository);
 const Iroom_service : IRoomService = RoomService.getInstance(repository);
@@ -112,6 +115,7 @@ const app_layer : IApiApplication = ApiApplication.getInstance(services);
 const stateless_controller : StatelessController = StatelessController.getInstance(app, app_layer);
 const stateful_controller : StatefulController = StatefulController.getInstance(server, app_layer);
 
+// start the server on port 3000
 server.listen(3000, () => {console.log("server listening....")})   
 
 }

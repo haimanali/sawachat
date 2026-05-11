@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+// this is the error page shown when something goes wrong with the server or connection
 export default function Error() {
   return (
     <>
-      {/* Background Orbs */}
+      {/* Background decoration orbs */}
       <div className="bg-layer" aria-hidden="true">
         <div className="bg-orb orb-1"></div>
         <div className="bg-orb orb-2"></div>

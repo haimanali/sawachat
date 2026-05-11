@@ -21,6 +21,8 @@ export enum IPayloadRequestType
     REJOIN_REQUEST = "rejoin_request",
     MARK_NOTIF_READ = "mark_notif_read",
     BULK_NOTIF_READ = "bulk_notif_read",
+    UPDATE_NICKNAME = "update_nickname",
+    UPDATE_AVATAR = "update_avatar",
     LIMIT = 10,
 }
 
@@ -34,6 +36,9 @@ export enum IPayloadResponseType
     ONSEND_MESSAGE = "onsend_message",
     ONRECEIVE_MESSAGE = "onreceive_message",
     ONMESSAGE_RECEIVED = "onmessage_received",
+    ONMESSAGE_READ = "onmessage_read",
+    ONUPDATE_NICKNAME = "onupdate_nickname",
+    ONUPDATE_AVATAR = "onupdate_avatar",
 
     ONVERDICT_REQUEST = "onverdict_request_create_room",
     ONVERDICT_REJOIN = "onverdict_rejoin",
@@ -61,7 +66,7 @@ export enum IPayloadResponseType
     ONDELETE_MESSAGE = "ondelete_message",
     ONBAN = "onban",
     
-    MESSAGE_DELELTED = "message has been deleted",
+    MESSAGE_DELETED = "message has been deleted",
 }
 
 export interface IPayloadInterface<T = void>

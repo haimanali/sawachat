@@ -49,4 +49,5 @@ export interface ISocketContext {
     setNotifications : React.Dispatch<React.SetStateAction<INotificationState>>,
     onlineStatus : "online" | "offline",
     contacts: Record<string, IContactState>,
+    showToast: (msg: string) => void;
 }

@@ -4,6 +4,8 @@ import mysql, { ResultSetHeader } from 'mysql2/promise'
 import { IDBQuery, IDBUpdate } from '../responseFormat.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
+// this is the core database connection class
+// it uses a pool to manage multiple mysql connections at once
 export class DBConn
 {
     public static getInstance() : DBConn
@@ -22,10 +24,11 @@ export class DBConn
     
     private constructor ()
     {
+        // we connect to the local sawachat database on wamp
         DBConn.pool = mysql.createPool({
             host: 'localhost',
             user: 'root',
-            password: 'SawaChat10@', //must change can't hard code it..
+            password: 'SawaChat10@', // local development password
             database: 'sawachat',
 
             typeCast : (field, next) => {  
@@ -43,11 +46,13 @@ export class DBConn
         });
     }
 
+    // this helps us run a group of sql commands as a single transaction
     public static async runTransaction(conn : mysql.PoolConnection, work : () => Promise<void>) : Promise<void>
     {
         return await DBConn.conn_pools.run(conn, work);
     }
 
+    // this starts a new transaction
     public static async beginTransaction() : Promise<mysql.PoolConnection>
     {
         const conn = await DBConn.pool.getConnection();
@@ -55,6 +60,7 @@ export class DBConn
         return conn;
     }
 
+    // this function handles sql updates like insert or update
     public async executeUpdate(sql : string, params :any[]) : Promise<IDBUpdate>{
 
         const curr_conn = DBConn.conn_pools.getStore() || DBConn.pool;
@@ -63,6 +69,7 @@ export class DBConn
         return {affectedRows : result.affectedRows, insertId : result.insertId};
     }
 
+    // this function handles sql queries like select
     public async executeQuery<T>(sql: string, params: any[]): Promise<IDBQuery<T>> {
         const curr_conn = DBConn.conn_pools.getStore() || DBConn.pool;
 
@@ -70,4 +77,4 @@ export class DBConn
         
         return { data: result, count: result.length };
     }
-}
+}

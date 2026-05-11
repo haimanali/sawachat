@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { apiCall } from "../../../services/apiCaller"; // Ensure the path is correct based on your folder structure
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../../hooks/useApp";
 
 const API_URL = "http://localhost:3000/api/signup";
 
+// this page handles the registration for new users
+// it uses a multi-step form to make it easier to fill out
 export default function Signup() {
   // ── State ──────────────────────────────────────────
+  // we have steps for nickname, password, and then success
   const [step, setStep] = useState<"nickname" | "password" | "success">("nickname");
   const [tagline, setTagline] = useState("Create your account");
   
@@ -22,9 +25,27 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [toastMsg, setToastMsg] = useState("");
+  
+  // Username availability
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
   const navigate = useNavigate();
-  const { setUserState } = useApp();
+  const { setUserState, t } = useApp();
+
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (username.trim()) {
+        checkUsernameAvailability(username.trim());
+      } else {
+        setUsernameAvailable(null);
+        setErrorMsg("");
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [username]);
   
 
   // ── Helpers ────────────────────────────────────────
@@ -33,6 +54,7 @@ export default function Signup() {
     setTimeout(() => setToastMsg(""), ms);
   };
 
+  // this helper checks how strong the password is by looking for numbers and capital letters
   const calcStrength = (pw: string): number => {
     let s = 0;
     if (pw.length >= 8) s++;
@@ -41,6 +63,28 @@ export default function Signup() {
     if (/[0-9]/.test(pw)) s++;
     if (/[^A-Za-z0-9]/.test(pw)) s++;
     return s;
+  };
+
+  // this helper checks if a username is available by calling the backend
+  const checkUsernameAvailability = async (user: string) => {
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(user)) return;
+    
+    setIsCheckingUsername(true);
+    try {
+      const result = await apiCall(`http://localhost:3000/api/auth/username/check/${user}`, "GET");
+      if (result.success) {
+        setUsernameAvailable(result.data);
+        if (!result.data) {
+          setErrorMsg(result.log_message);
+        } else {
+          setErrorMsg("");
+        }
+      }
+    } catch (err) {
+      console.error("Check username failed:", err);
+    } finally {
+      setIsCheckingUsername(false);
+    }
   };
 
   // ── Handlers ───────────────────────────────────────
@@ -54,6 +98,13 @@ export default function Signup() {
     }
     if (!/^[A-Za-z0-9_]{3,16}$/.test(user)) {
       return showToast("❌ Username must be 3-16 letters, numbers, or underscores");
+    }
+
+    if (usernameAvailable === false) {
+      return showToast("❌ This username is already taken");
+    }
+    if (isCheckingUsername) {
+      return showToast("⌛ Still checking username...");
     }
 
     setTagline("Secure your account");
@@ -101,7 +152,7 @@ export default function Signup() {
   const strengthScore = calcStrength(password);
   const strengthPct = password.length ? Math.max((strengthScore / 5) * 100, 12) : 0;
   const colors = ["#f44336", "#ff9800", "#ffc107", "#8bc34a", "#4caf50"];
-  const labels = ["Very weak", "Weak", "Fair", "Strong", "Very strong"];
+  const labels = [t('very_weak'), t('weak'), t('fair'), t('strong'), t('very_strong')];
   const strengthColor = password.length ? colors[strengthScore - 1] ?? colors[0] : "transparent";
   const strengthLabelText = password.length ? labels[strengthScore - 1] ?? labels[0] : "";
 
@@ -116,21 +167,20 @@ export default function Signup() {
 
       <div className="page-wrapper">
         <header className="app-header">
-          {/* Ensure the image path is correct or imported */}
           <img src="./src/assets/appmark.png" alt="SawaChat" className="app-logo" />
-          <h1 className="app-name">SawaChat</h1>
-          <p className="app-tagline" id="step-tagline">{tagline}</p>
+          <h1 className="app-name">{t('chats_title')}</h1>
+          <p className="app-tagline" id="step-tagline">{step === 'nickname' ? t('create_account_tag') : tagline}</p>
         </header>
 
         {/* ── Step 1: Nickname ─────────────────────────── */}
         {step === "nickname" && (
           <section className="card step-card active" aria-label="Step 1: Choose a nickname">
-            <a href="/" className="btn-back">
+            <Link to="/" className="btn-back">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
-              Back
-            </a>
+              {t('back')}
+            </Link>
             <div className="card-body center-content">
               <div className="avatar-ring">
                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
@@ -138,31 +188,40 @@ export default function Signup() {
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
-              <h2 className="card-title">Choose a Nickname</h2>
-              <p className="card-subtitle">This is how others will see you</p>
+              <h2 className="card-title">{t('step_1_title')}</h2>
+              <p className="card-subtitle">{t('step_1_sub')}</p>
 
               <form onSubmit={handleNicknameSubmit} className="form-full" noValidate>
                 <div className="input-group">
-                  <label htmlFor="reg-username">Unique Username</label>
+                  <label htmlFor="reg-username">{t('unique_username')}</label>
                   <div className="input-wrapper">
                     <span className="input-prefix">@</span>
                     <input
                       type="text"
                       id="reg-username"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="choose_a_username"
+                      inputMode="email"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\s/g, ""); // No spaces allowed
+                        setUsername(val);
+                        setUsernameAvailable(null);
+                        setErrorMsg("");
+                      }}
+                      placeholder={t('choose_username_ph')}
                       autoComplete="off"
                       autoCapitalize="none"
                       spellCheck="false"
                       required
                     />
+                    {isCheckingUsername && <div className="input-spinner"></div>}
+                    {usernameAvailable === true && <span className="input-success-icon">✓</span>}
+                    {usernameAvailable === false && <span className="input-error-icon">✕</span>}
                   </div>
-                  <p className="input-hint">3–16 letters, numbers, or underscores. Cannot be changed later.</p>
+                  <p className="input-hint">{t('username_hint')}</p>
                 </div>
 
                 <div className="input-group">
-                  <label htmlFor="reg-nickname">Display Nickname</label>
+                  <label htmlFor="reg-nickname">{t('display_nickname')}</label>
                   <div className="input-wrapper">
                     <span className="input-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -175,16 +234,16 @@ export default function Signup() {
                       id="reg-nickname"
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
-                      placeholder="Enter your nickname"
+                      placeholder={t('nickname_ph')}
                       autoComplete="off"
                       autoCapitalize="words"
                       required
                     />
                   </div>
-                  <p className="input-hint">2–30 characters. You can change this later in settings.</p>
+                  <p className="input-hint">{t('nickname_hint')}</p>
                 </div>
                 <button type="submit" className="btn-primary btn-full">
-                  Continue
+                  {t('continue')}
                 </button>
               </form>
             </div>
@@ -205,7 +264,7 @@ export default function Signup() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
-              Back
+              {t('back')}
             </button>
             <div className="card-body center-content">
               <div className="avatar-ring">
@@ -214,12 +273,12 @@ export default function Signup() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </div>
-              <h2 className="card-title">Set Your Password</h2>
-              <p className="card-subtitle">Secure your anonymous account</p>
+              <h2 className="card-title">{t('step_2_title')}</h2>
+              <p className="card-subtitle">{t('step_2_sub')}</p>
 
               <form onSubmit={handlePasswordSubmit} className="form-full" noValidate>
                 <div className="input-group">
-                  <label htmlFor="reg-password">Password</label>
+                  <label htmlFor="reg-password">{t('password_label')}</label>
                   <div className="input-wrapper">
                     <span className="input-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -233,7 +292,7 @@ export default function Signup() {
                       draggable = "false"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min. 8 characters"
+                      placeholder={t('min_8_char')}
                       autoComplete="off"
                       onCopy={ (e) => {e.preventDefault()} }
                       onCut= { (e) => {e.preventDefault()} }
@@ -272,7 +331,7 @@ export default function Signup() {
                 </div>
 
                 <div className="input-group">
-                  <label htmlFor="reg-confirm">Confirm Password</label>
+                  <label htmlFor="reg-confirm">{t('confirm_password')}</label>
                   <div className="input-wrapper">
                     <span className="input-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -285,7 +344,7 @@ export default function Signup() {
                       draggable = "false"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Repeat your password"
+                      placeholder={t('repeat_password')}
                       autoComplete="off"
                       onCopy={ (e) => {e.preventDefault()} }
                       onCut= { (e) => {e.preventDefault()} }
@@ -330,7 +389,7 @@ export default function Signup() {
                   className={`btn-primary btn-full btn-loader-wrap ${isLoading ? "is-loading" : ""}`}
                   disabled={isLoading}
                 >
-                  <span className="btn-label">Create Account</span>
+                  <span className="btn-label">{t('create_account_btn')}</span>
                   {isLoading && <div className="btn-spinner"></div>}
                 </button>
               </form>
@@ -349,14 +408,19 @@ export default function Signup() {
                 </svg>
               </div>
 
-              <h2 className="card-title">Account Created!</h2>
+              <h2 className="card-title">{t('account_created')}</h2>
               <p className="card-subtitle">
-                Your secure account is ready.<br />
-                Redirecting you to your profile...
+                {t('account_ready')}<br />
+                {t('redirecting')}
               </p>
             </div>
           </section>
         )}
+
+        <footer style={{ marginTop: 'auto', padding: '24px 0', display: 'flex', gap: '16px', justifyContent: 'center', width: '100%' }}>
+            <Link to="/help" className="btn-ghost" style={{ fontSize: '12px', textDecoration: 'none' }}>{t('help_center')}</Link>
+            <Link to="/policies" className="btn-ghost" style={{ fontSize: '12px', textDecoration: 'none' }}>{t('policies')}</Link>
+        </footer>
       </div>
 
       {/* ── Toast Notification ────────────────────────── */}

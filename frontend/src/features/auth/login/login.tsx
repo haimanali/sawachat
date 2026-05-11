@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { apiCall } from "../../../services/apiCaller"; // Ensure the path is correct
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../../hooks/useApp";
 
 const API_URL = "http://localhost:3000/api/login";
 
+// this is the login page where users enter their credentials
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,15 +19,17 @@ export default function Login() {
   const [isShaking, setIsShaking] = useState(false);
 
   const navigate = useNavigate();
-  const { setUserState } = useApp();
+  const { setUserState, t } = useApp();
 
+  // we change the greeting based on what time it is
   useEffect(() => {
     const h = new Date().getHours();
-    if (h < 5) setGreeting("Good Night 🌙");
-    else if (h < 12) setGreeting("Good Morning ☀️");
-    else if (h < 17) setGreeting("Good Afternoon 👋");
-    else if (h < 20) setGreeting("Good Evening 🌆");
-  }, []);
+    if (h < 5) setGreeting(t('good_night'));
+    else if (h < 12) setGreeting(t('good_morning'));
+    else if (h < 17) setGreeting(t('good_afternoon'));
+    else if (h < 20) setGreeting(t('good_evening'));
+    else setGreeting(t('welcome_back'));
+  }, [t]);
 
   // ── Helpers ────────────────────────────────────────
   const showToast = (msg: string, ms = 2800) => {
@@ -41,6 +44,7 @@ export default function Login() {
   };
 
   // ── Handlers ───────────────────────────────────────
+  // this handles the login button click
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -82,22 +86,21 @@ export default function Login() {
 
       <div className="page-wrapper">
         <header className="app-header">
-          {/* Ensure the image path is correct based on your public folder */}
           <img src="./src/assets/appmark.png" alt="SawaChat" className="app-logo" />
-          <h1 className="app-name">SawaChat</h1>
+          <h1 className="app-name">{t('chats_title')}</h1>
           <p className="app-tagline" id="greeting">{greeting}</p>
         </header>
 
         <main className="card">
-          <a href="/" className="btn-back">
+          <Link to="/" className="btn-back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back
-          </a>
+            {t('back')}
+          </Link>
 
           <div className="card-body center-content">
-            <p className="card-subtitle">Login with your Username</p>
+            <p className="card-subtitle">{t('login_username_subtitle')}</p>
 
             <form
               id="login-form"
@@ -107,7 +110,7 @@ export default function Login() {
               noValidate
             >
               <div className="input-group">
-                <label htmlFor="login-username">Username</label>
+                <label htmlFor="login-username">{t('username_label')}</label>
                 <div className="input-wrapper">
                   <span className="input-prefix">@</span>
                   <input
@@ -115,7 +118,7 @@ export default function Login() {
                     id="login-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="your_username"
+                    placeholder={t('username_ph')}
                     autoComplete="off"
                     autoCapitalize="none"
                     spellCheck="false"
@@ -125,7 +128,7 @@ export default function Login() {
               </div>
 
               <div className="input-group">
-                <label htmlFor="login-password">Password</label>
+                <label htmlFor="login-password">{t('password_label')}</label>
                 <div className="input-wrapper">
                   <span className="input-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -138,7 +141,7 @@ export default function Login() {
                     id="login-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t('password_ph')}
                     autoComplete="current-password"
                     required
                   />
@@ -172,7 +175,7 @@ export default function Login() {
                     onChange={(e) => setAutoLogin(e.target.checked)}
                   />
                   <span className="checkbox-custom"></span>
-                  Remember me
+                  {t('remember_me')}
                 </label>
               </div>
 
@@ -192,16 +195,21 @@ export default function Login() {
                 className={`btn-primary btn-full btn-loader-wrap ${isLoading ? "is-loading" : ""}`}
                 disabled={isLoading}
               >
-                <span className="btn-label">Login to Existing Account</span>
+                <span className="btn-label">{t('login_existing')}</span>
                 {isLoading && <div className="btn-spinner"></div>}
               </button>
             </form>
 
             <p className="form-footer">
-              Don't have an account? <a href="/signup" id="go-signup">Create one</a>
+              {t('no_account')} <Link to="/signup" id="go-signup">{t('create_one')}</Link>
             </p>
           </div>
         </main>
+
+        <footer style={{ marginTop: 'auto', padding: '24px 0', display: 'flex', gap: '16px', justifyContent: 'center', width: '100%' }}>
+            <Link to="/help" className="btn-ghost" style={{ fontSize: '12px', textDecoration: 'none' }}>{t('help_center')}</Link>
+            <Link to="/policies" className="btn-ghost" style={{ fontSize: '12px', textDecoration: 'none' }}>{t('policies')}</Link>
+        </footer>
       </div>
 
       {/* ── Toast Notification ────────────────────────── */}

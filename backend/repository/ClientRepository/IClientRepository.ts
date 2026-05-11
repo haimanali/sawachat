@@ -13,6 +13,8 @@ export interface IClientRepository
     getClientBySessionID(session_id : string) : Promise<IRepositoryLayerResponse<IClient>>;
     checkClientExist(username : string) : Promise<IRepositoryLayerResponse<IClient>>;
     removeClientSession(session_id : string) : Promise<IRepositoryLayerResponse>;
+    updateNickname(user_id: number, nickname: string): Promise<IRepositoryLayerResponse>;
+    updateAvatar(user_id: number, avatar: string): Promise<IRepositoryLayerResponse>;
     
     validateClient(username : string, password : string) : Promise<IRepositoryLayerResponse<IClient>>;
     

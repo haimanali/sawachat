@@ -1,10 +1,12 @@
 import { IClient } from "../../domain/IClient.js";
 import { IRoom } from "../../domain/IRoom.js";
 import { IMessagePublic } from "../../public/IMessagePublic.js";
+import { IRoomPublic } from "../../public/IRoomPublic.js";
 import { IRepositoryLayerResponse } from "../../responseFormat.js";
 
 export interface IRoomRepository
 {
+    deleteLastMessagePreview(room_id: number, public_id: string): Promise<IRepositoryLayerResponse>;
     updateChatRoomPreview(message: IMessagePublic, room_id: number): Promise<IRepositoryLayerResponse>
     updateRoomMemberLastRead(user_id: number, room_id: number): Promise<IRepositoryLayerResponse>;
     getRoomByID(room_id : number): Promise<IRepositoryLayerResponse<IRoom>>;
@@ -16,5 +18,5 @@ export interface IRoomRepository
     insertRoomMember(user_id : number, room_id : number) : Promise<IRepositoryLayerResponse>;
     getRoomByPublicID(public_id : string) : Promise<IRepositoryLayerResponse<IRoom>>;
 
-    getRoomsByUserID(user_id : number, cursor : Date | null) : Promise<IRepositoryLayerResponse<IRoom []>>;
+    getRoomsByUserID(user_id : number, cursor : Date | null) : Promise<IRepositoryLayerResponse<IRoom[]>>;
 }

@@ -3,6 +3,7 @@ import { IClient } from '../../domain/IClient.js';
 import { IServiceLayerResponse} from "../../responseFormat.js";
 import { ISignUpService } from "./ISignUpService.js";
 
+// this service handles new user registrations
 export class SignUpService implements ISignUpService
 {
         public static getInstance(repository : Repository) : SignUpService
@@ -22,9 +23,10 @@ export class SignUpService implements ISignUpService
         }
 
 
-        //overrides
+        // this function creates a new user account if the username isn't taken
         public async performUserSignUp(username : string, nickname : string, password : string): Promise<IServiceLayerResponse<IClient>> 
         {
+            // we check if the user already exists in the database
             const c_result = await this.repository.Iclient_repo.checkClientExist(username);
             
             if(c_result.success)
@@ -32,6 +34,7 @@ export class SignUpService implements ISignUpService
                 return {success : false , log_message : "either User exists / account has been suspended"};
             }
    
+            // we save the new user information to the database
             const r_result = await this.repository.Iclient_repo.insertClientRecord(username, nickname, password);
             return { success : true, data : r_result.data!, log_message : "Account created successfully.."};
         }

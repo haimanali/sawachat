@@ -12,9 +12,12 @@ import { ILoginRequest, ISignUpRequest } from "../requestFormat.js";
 import { IAppLayerResponse } from "../responseFormat.js";
 
 
+// this is the main interface for our application
+// it lists all the things the backend can do, like login, send messages, and manage contacts
 export interface IApiApplication
 {
-    updateLastReadMessage(user_id : number, room_public_id: string): Promise<IAppLayerResponse>;
+    deleteChatRoomLastMessage(room_id: number, public_id: string): Promise<IAppLayerResponse>;
+    updateLastReadMessage(user_id : number, room_public_id: string, read_receipts: boolean): Promise<IAppLayerResponse<void, number>>;
     acceptRejoinRequest(req_public_id: string, username: string, my_user_id : number, request_verdict : boolean): Promise<IAppLayerResponse<IRoomPublic, {other_userid : number, room_id : number}>>;
     sendRejoinRequest(room_public_id: string, username: string, s_client : IClient): Promise<IAppLayerResponse<IRequestPublic, number>>;
     deleteContact(room_public_id : string, username : string) : Promise<IAppLayerResponse<IClientPublic, {room_id : number, is_active: boolean, other_userID : number}>>;
@@ -27,7 +30,10 @@ export interface IApiApplication
     authenticateByUsername(username : string) : Promise<IAppLayerResponse<IClientPublic>>;
     loginUser(req_body: ILoginRequest) : Promise<IAppLayerResponse<IClientPublic, { session_id : string }>>,
     registerUser(req_body: ISignUpRequest) : Promise<IAppLayerResponse<IClientPublic, { session_id : string }>>,
+    checkUsernameAvailability(username: string): Promise<IAppLayerResponse<boolean>>;
     logoutUser(session_id : string) : Promise<IAppLayerResponse>,
+    updateNickname(user_id: number, nickname: string): Promise<IAppLayerResponse>;
+    updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse>;
     
     sendContactRequest(r_username : string, s_client : IClient) : Promise<IAppLayerResponse<IRequestPublic, IClient>>
     acceptContactRequest(username : string, request_verdict : boolean, r_client : IClient) : Promise<IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room : IRoom}>>;

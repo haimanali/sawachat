@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useSocket } from "../../../hooks/useSocket";
+import { useApp } from "../../../hooks/useApp";
 import { IPayloadInterface, IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { apiCall } from "../../../services/apiCaller";
 import RequestsTab from "./requestTab";
@@ -10,7 +11,9 @@ import { ENotificationType } from "../../../interfaces/UI/notificationFormat";
 import NotificationDot from "../../../componets/notificationDot/NotificationDot";
 import UserAvatar from "../../../componets/avatar/userAvatar";
 
-export default function SideBar() {
+// this is the sidebar where you can see your chats and friend requests
+export default function SideBar({ sidebarOpen, onCloseSidebar }: { sidebarOpen?: boolean, onCloseSidebar?: () => void }) {
+    const { theme, setTheme, language, setLanguage, t } = useApp();
 
     const {
         socket,
@@ -28,18 +31,21 @@ export default function SideBar() {
 
 
     return (<>
-        <aside className="chat-sidebar" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <aside className={`chat-sidebar ${sidebarOpen ? 'mobile-open' : ''}`} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {/* --- HEADER --- */}
             <div className="sidebar-header">
-                <h2 data-i18n="chats_title">SawaChat</h2>
-                <button className="icon-btn" id="settings-btn"
-                    onClick={() => { setSettingsPOPUP(true) }}
-                    aria-label="Settings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                    </svg>
-                </button>
+                <h2>{t('chats_title')}</h2>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+
+                    <button className="icon-btn" id="settings-btn"
+                        onClick={() => { setSettingsPOPUP(true) }}
+                        aria-label="Settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             {/* --- TAB NAVIGATOR --- */}
@@ -68,7 +74,7 @@ export default function SideBar() {
                         gap: "6px"                 // The magic spacing between text and dot
                     }}
                 >
-                    Rooms
+                    <span>{t('tab_rooms')}</span>
                     {(notifCountType[ENotificationType.CREATE_CONTACT] > 0 || notifCountType[ENotificationType.RECEIVE_MESSAGE] > 0) && <NotificationDot />}
                 </button>
 
@@ -92,7 +98,7 @@ export default function SideBar() {
                         gap: "6px"
                     }}
                 >
-                    Requests
+                    <span>{t('tab_requests')}</span>
                     {notifCountType[ENotificationType.RECEIVE_REQUEST] > 0 && <NotificationDot />}
                 </button>
             </div>
@@ -121,8 +127,9 @@ export default function SideBar() {
                 {/* Left Side: Avatar and Name Info */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
                     <UserAvatar
-                        mode={onlineStatus} // Or link to your actual status state
+                        mode={onlineStatus}
                         nickname={userState?.nickname || "User"}
+                        image={userState?.avatar}
                     />
 
                     <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>

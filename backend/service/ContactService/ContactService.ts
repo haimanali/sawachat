@@ -7,6 +7,7 @@ import { IContactService } from "./IContactService.js";
 import { v4 } from "uuid";
 
 
+// this service handles everything related to friends and contact requests
 export class ContactService implements IContactService
 {
     public static getInstance(repository : Repository) : ContactService
@@ -27,15 +28,16 @@ export class ContactService implements IContactService
     }
 
 
-    //overrides
-
+    // we generate a unique id for every request
     public generatePublicID() : string
     {
         return v4();
     }
 
+    // this function sends a new friend request to another user
     public async performSendRequest(public_id : string, r_user_id: number, s_user_id : number): Promise<IServiceLayerResponse<IRequest>> 
     {
+        // we check if a request is already pending so we don't send it twice
         const is_pending = await this.repository.Icontact_repo.isRequestPending(r_user_id, s_user_id, "contact");
 
         if (is_pending.data)
@@ -44,6 +46,7 @@ export class ContactService implements IContactService
                 log_message : "Request has already been sent",
             };
 
+        // we check if the user has too many pending requests
         const is_full = await this.repository.Icontact_repo.checkRequestLimit(r_user_id, "contact");
         if (is_full.data)
             return {
@@ -51,6 +54,7 @@ export class ContactService implements IContactService
                 log_message : is_full.log_message,
             };
         
+        // we save the request in the database
         const c_result = await this.repository.Icontact_repo.insertContactRequest(public_id, r_user_id, s_user_id);
         
         return {
@@ -60,6 +64,7 @@ export class ContactService implements IContactService
         };
     }
 
+    // this handles when someone clicks accept or reject on a friend request
     public async performVerdictRequest(verdict : boolean, s_user_id: number, r_user_id: number): Promise<IServiceLayerResponse> 
     {
         let status : string;
@@ -69,15 +74,18 @@ export class ContactService implements IContactService
         else
             status = "rejected";
 
+        // we update the status in the database
         await this.repository.Icontact_repo.updateContactRequest(status, r_user_id, s_user_id);
         return {success : verdict, log_message : `contact request has been ${status}`};
     }
 
+    // this adds a permanent contact record after a request is accepted
     public async performAddContact(s_user_id: number, r_user_id : number): Promise<IServiceLayerResponse> {
         await this.repository.Icontact_repo.insertContactRecord(r_user_id, s_user_id);
         return {success : true, log_message : "new contact has been added.."};
     }
 
+    // this gets all the pending friend requests for a user
     public async performLoadRequests(user_id: number): Promise<IServiceLayerResponse<IRequest []>> {
         const c_result = await this.repository.Icontact_repo.getRequestsByUserID(user_id);
 

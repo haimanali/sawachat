@@ -14,6 +14,8 @@ import { NotificationTypeUnion } from "../domain/Notifications/NotificationTypeU
 import { INotificationPublic } from "../public/INotificationPublic.js";
 
 
+// this is the main application layer that connects everything together
+// it calls the different services to handle requests from the controllers
 export class ApiApplication implements IApiApplication {
     public static getInstance(services: Services): ApiApplication {
         if (ApiApplication.instance)
@@ -30,11 +32,7 @@ export class ApiApplication implements IApiApplication {
     }
 
 
-    public async extendSession(user_id: number): Promise<IAppLayerResponse> {
-        const result = await this.services.Isession_service.performExtendSession(user_id);
-        return result;
-    }
-
+    // this function verifies if the user's session is still valid
     public async authenticateBySessionID(session_id: string): Promise<IAppLayerResponse<IClientPublic, IClient>> {
         const result = await this.services.Isession_service.performVerifySession(session_id);
         if (!result.data)
@@ -46,6 +44,7 @@ export class ApiApplication implements IApiApplication {
             {
                 username: result.data!.username,
                 nickname: result.data!.nickname,
+                avatar: result.data!.avatar,
             },
             log_message: result.log_message,
 
@@ -53,12 +52,12 @@ export class ApiApplication implements IApiApplication {
         };
     }
 
+    // this lets us find a user by their username
     public async authenticateByUsername(username: string): Promise<IAppLayerResponse<IClientPublic>> {
         const result = await this.services.Isession_service.performVerifyUsername(username);
 
         if (!result.data)
             return { success: result.success, log_message: result.log_message };
-
 
         return {
             success: result.success,
@@ -66,15 +65,39 @@ export class ApiApplication implements IApiApplication {
             {
                 username: result.data!.username,
                 nickname: result.data!.nickname,
+                avatar: result.data!.avatar,
             },
             log_message: result.log_message,
         };
     }
 
+    // this makes the session last longer
+    public async extendSession(user_id: number): Promise<IAppLayerResponse> {
+        const result = await this.services.Isession_service.performExtendSession(user_id);
+        return result;
+    }
+
+
+    // this handles the login process and generates a new session id
     public async loginUser(req_body: ILoginRequest): Promise<IAppLayerResponse<IClientPublic, { session_id: string }>> {
         const s_result = this.services.Isession_service.generateSessionID();
         const session_id = s_result.data!;
 
+        const valid_username = this.services.Isession_service.performValidateUsernamePrompt(req_body.username);
+        if (!valid_username.success)
+            return {
+                success: valid_username.success,
+                log_message: valid_username.log_message,
+            };
+
+        const valid_password = this.services.Isession_service.performValidateUsernamePrompt(req_body.password);
+        if (!valid_password.success)
+            return {
+                success: valid_password.success,
+                log_message: valid_password.log_message,
+            };
+
+        // we call the login service to check the username and password
         const l_result = await this.services.Ilogin_service.performUserLogin(session_id, req_body.username, req_body.password, req_body.auto_login);
         if (!l_result.success)
             return {
@@ -85,6 +108,7 @@ export class ApiApplication implements IApiApplication {
         const client_public: IClientPublic = {
             username: l_result.data!.username,
             nickname: l_result.data!.nickname,
+            avatar: l_result.data!.avatar,
         };
 
         return {
@@ -100,6 +124,29 @@ export class ApiApplication implements IApiApplication {
     }
 
     public async registerUser(req_body: ISignUpRequest): Promise<IAppLayerResponse<IClientPublic, { session_id: string }>> {
+
+
+        const valid_username = this.services.Isession_service.performValidateUsernamePrompt(req_body.username);
+        if (!valid_username.success)
+            return {
+                success: valid_username.success,
+                log_message: valid_username.log_message,
+            };
+
+        const valid_nickname = this.services.Isession_service.performValidateNicknamePrompt(req_body.nickname);
+        if (!valid_username.success)
+            return {
+                success: valid_nickname.success,
+                log_message: valid_nickname.log_message,
+            };
+
+        const valid_password = this.services.Isession_service.performValidateUsernamePrompt(req_body.password);
+        if (!valid_password.success)
+            return {
+                success: valid_password.success,
+                log_message: valid_password.log_message,
+            };
+
         const si_result = await this.services.Isignup_service.performUserSignUp(req_body.username, req_body.nickname, req_body.password);
         if (!si_result.success)
             return {
@@ -115,6 +162,7 @@ export class ApiApplication implements IApiApplication {
         const client_public: IClientPublic = {
             username: l_result.data!.username,
             nickname: l_result.data!.nickname,
+            avatar: l_result.data!.avatar,
         };
 
         return {
@@ -128,8 +176,25 @@ export class ApiApplication implements IApiApplication {
         };
     }
 
+    public async checkUsernameAvailability(username: string): Promise<IAppLayerResponse<boolean>> {
+        const result = await this.services.Isession_service.performVerifyUsername(username);
+        return {
+            success: true,
+            data: !result.success, // true if available (doesn't exist)
+            log_message: result.success ? "Username is already taken" : "Username is available",
+        };
+    }
+
     public async logoutUser(session_id: string): Promise<IAppLayerResponse> {
         return await this.services.Isession_service.performLogOutSession(session_id);
+    }
+
+    public async updateNickname(user_id: number, nickname: string): Promise<IAppLayerResponse> {
+        return await this.services.Isession_service.performUpdateNickname(user_id, nickname);
+    }
+
+    public async updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse> {
+        return await this.services.Isession_service.performUpdateAvatar(user_id, avatar);
     }
 
     public async sendContactRequest(r_username: string, s_client: IClient): Promise<IAppLayerResponse<IRequestPublic, IClient>> {
@@ -137,6 +202,13 @@ export class ApiApplication implements IApiApplication {
             return {
                 success: false,
                 log_message: "you can't add yourself...",
+            };
+
+        const valid_req_prompt = this.services.Isession_service.performtValidateRequestPrompt(r_username); 
+        if (!valid_req_prompt.success)
+            return {
+                success : valid_req_prompt.success,
+                log_message : valid_req_prompt.log_message,
             };
 
         const s_result = await this.services.Isession_service.performVerifyUsername(r_username);
@@ -161,6 +233,7 @@ export class ApiApplication implements IApiApplication {
                 public_id: c_result.data!.public_id,
                 username: s_client.username,
                 nickname: s_client.nickname,
+                avatar: s_client.avatar,
                 created_at: c_result.data!.created_at,
                 type: c_result.data!.type,
             },
@@ -205,7 +278,7 @@ export class ApiApplication implements IApiApplication {
             type: "private",
             created_at: r_result.data!.created_at,
             is_active: true,
-            last_msg_date: r_result.data!.last_msg_date,
+            last_msg_date: r_result.data!.last_msg_date ?? null,
             last_message_payload: r_result.data!.last_message_payload,
             unread_msgs: 0,
         };
@@ -218,7 +291,7 @@ export class ApiApplication implements IApiApplication {
             type: "private",
             created_at: r_result.data!.created_at,
             is_active: true,
-            last_msg_date: r_result.data!.last_msg_date,
+            last_msg_date: r_result.data!.last_msg_date ?? null,
             last_message_payload: r_result.data!.last_message_payload,
             unread_msgs: 0,
         };
@@ -241,7 +314,14 @@ export class ApiApplication implements IApiApplication {
         };
     }
 
-    public async sendMessage(room_public_id: string, iv: string, content: string, s_client: IClient): Promise<IAppLayerResponse<IMessagePublic, { room_id: number, enc_key : string }>> {
+    public async sendMessage(room_public_id: string, iv: string, content: string, s_client: IClient): Promise<IAppLayerResponse<IMessagePublic, { room_id: number, enc_key: string }>> {
+        const valid_prompt = this.services.Isession_service.performValidateMessagePrompt(content);
+        if (!valid_prompt.success)
+            return {
+                success : valid_prompt.success,
+                log_message : valid_prompt.log_message,
+            };
+            
         const r_result = await this.services.Iroom_service.performGetRoom(room_public_id);
         if (!r_result.success)
             return {
@@ -258,12 +338,12 @@ export class ApiApplication implements IApiApplication {
             room_public_id: room_public_id,
             username: s_client.username,
             nickname: s_client.nickname,
-            content : m_result.data!.is_del ? IPayloadResponseType.MESSAGE_DELELTED : m_result.data!.content,
+            content: m_result.data!.is_del ? IPayloadResponseType.MESSAGE_DELETED : m_result.data!.content,
             created_at: m_result.data!.created_at,
             is_sent: true,
             is_delivered: m_result.data!.is_delivered,
             is_read: m_result.data!.is_read,
-            is_del : m_result.data!.is_del,
+            is_del: m_result.data!.is_del,
         };
 
         const update_lastMsg_payload = await this.services.Iroom_service.performUpdateLastMessage(message_public, r_result.data!.room_id);
@@ -275,7 +355,7 @@ export class ApiApplication implements IApiApplication {
             internal:
             {
                 room_id: r_result.data!.room_id,
-                enc_key : r_result.data!.enc_key,
+                enc_key: r_result.data!.enc_key,
             },
 
         };
@@ -306,6 +386,7 @@ export class ApiApplication implements IApiApplication {
                     public_id: request.public_id,
                     username: request.username,
                     nickname: request.nickname,
+                    avatar: request.avatar,
                     created_at: request.created_at,
                     type: request.type,
                 }
@@ -319,7 +400,7 @@ export class ApiApplication implements IApiApplication {
         };
     }
 
-    public async updateLastReadMessage(user_id: number, room_public_id: string): Promise<IAppLayerResponse> {
+    public async updateLastReadMessage(user_id: number, room_public_id: string, read_receipts: boolean): Promise<IAppLayerResponse<void, number>> {
         const r_result = await this.services.Iroom_service.performGetRoom(room_public_id);
         if (!r_result.success)
             return {
@@ -328,7 +409,13 @@ export class ApiApplication implements IApiApplication {
             };
 
         const update_result = await this.services.Iroom_service.performUpdateLastRead(user_id, r_result.data!.room_id);
-        return update_result;
+
+        // Also update the is_read column on the Message table for the sender's messages if read_receipts is enabled
+        if (read_receipts) {
+            await this.services.Imessage_service?.performUpdateMessagesReadInRoom?.(user_id, r_result.data!.room_id);
+        }
+
+        return { ...update_result, internal: r_result.data!.room_id };
     }
 
     public async fetchUserRooms(client: IClient, cursor: Date | null): Promise<IAppLayerResponse<{ total_unread: number, rooms: IRoomPublic[] }, number[]>> {
@@ -357,7 +444,7 @@ export class ApiApplication implements IApiApplication {
             message_public.push({
                 ...message,
                 is_sent: true,
-                content : message.is_del ? IPayloadResponseType.MESSAGE_DELELTED : message.content,
+                content: message.is_del ? IPayloadResponseType.MESSAGE_DELETED : message.content,
             });
         });
 
@@ -406,8 +493,8 @@ export class ApiApplication implements IApiApplication {
             const contactrm_result = await this.services.Icontact_service.performRemoveContact(user1.user_id, user2.user_id);
         }
 
-        const toPublic = ({ username, nickname }: IClient): IClientPublic => {
-            return { username, nickname };
+        const toPublic = ({ username, nickname, avatar }: IClient): IClientPublic => {
+            return { username, nickname, avatar };
         };
 
         return {
@@ -447,6 +534,7 @@ export class ApiApplication implements IApiApplication {
 
         const request_public: IRequestPublic = {
             username: result.data!.request.username,
+            avatar: s_client.avatar,
             public_id: result.data!.request.public_id,
             nickname: result.data!.request.nickname,
             created_at: result.data!.request.created_at,
@@ -495,7 +583,7 @@ export class ApiApplication implements IApiApplication {
             is_active: r_result.success,
             type: result.data!.type,
             last_message_payload: result.data!.last_message_payload,
-            last_msg_date: result.data!.last_msg_date,
+            last_msg_date: result.data!.last_msg_date ?? null,
             unread_msgs: 0,
         };
 
@@ -565,18 +653,28 @@ export class ApiApplication implements IApiApplication {
 
     public async validateMessage(content: string, iv: string, enc_key: string, user_id: number, callback: Function): Promise<IAppLayerResponse> {
         const result = await this.services.Iai_service.performValidateMessage(content, iv, enc_key, user_id);
+        if (!result.success)
+            return {
+                success: result.success,
+                log_message: result.log_message,
+            };
+
         if (result.data!.is_toxic)
-            callback(result.data?.total_strike);
+            await callback(result.data?.total_strike);
 
         return {
-            success : result.success,
-            log_message : result.log_message,
+            success: result.success,
+            log_message: result.log_message,
         };
     }
 
     public async deleteMessage(msg_public_id: string): Promise<IAppLayerResponse> {
         const m_result = await this.services.Imessage_service.performDeleteMessage(msg_public_id);
         return m_result;
+    }
+    public async deleteChatRoomLastMessage(room_id: number, public_id: string): Promise<IAppLayerResponse> {
+        const r_result = await this.services.Iroom_service.performDeleteLastMessage(room_id, public_id);
+        return r_result;
     }
 
 }

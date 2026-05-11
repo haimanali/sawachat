@@ -37,7 +37,7 @@ export class wsSession {
 
     public readonly client: IClient;
     private is_online: boolean;
-    private is_banned : boolean = false;
+    private is_banned: boolean = false;
 
     private stateful_controller: StatefulController;
     private app_layer: IApiApplication;
@@ -47,8 +47,8 @@ export class wsSession {
     private is_writting: boolean = false;
 
     private online_idle_timeout: NodeJS.Timeout = setTimeout(() => {
-        this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({success : true, data : {state : "offline"}, log_message : "user state has been changed"}) );
-        this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({success : true, data : { username: this.client.username, state: 'offline' }, log_message : "user status change"})); // to contacts...
+        this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
+        this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts...
         this.is_online = false;
     }, 1000 * 60 * 5);
 
@@ -56,17 +56,28 @@ export class wsSession {
     private last_session_update: number = Date.now();
     private session_idle_timeout: NodeJS.Timeout =
         setTimeout(() => {
-            this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({success : true, data : {state : "offline"}, log_message : "user state has been changed"}) );
-            this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this,  this.stateful_controller.preparePayload({success : true, data : { username: this.client.username, state: 'offline' }, log_message : "user status change"})); // to contacts...
+            this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
+            this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts...
             this.stateful_controller.clientDisconnect(this.client.user_id, this);
         }, 1000 * 60 * 60 * 3);
 
 
+    private graceful_disconnection : NodeJS.Timeout | null = null;
+
+    private cancelPendingDisconnection = () : boolean => {
+        if (this.graceful_disconnection)
+        {
+            clearTimeout(this.graceful_disconnection);
+            this.graceful_disconnection = null;
+            return true;
+        }
+        return false
+    };
 
     constructor(soc: Socket, stateful_controller: StatefulController, Iapp_layer: IApiApplication, client: IClient) {
         this.soc = soc;
         this.client = client;
-        this.is_online = true;
+        this.is_online = false;
 
         this.stateful_controller = stateful_controller;
         this.app_layer = Iapp_layer;
@@ -80,8 +91,8 @@ export class wsSession {
 
             clearTimeout(this.session_idle_timeout);
             this.session_idle_timeout = setTimeout(() => {
-                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({success : true, data : {state : "offline"}, log_message : "user state has been changed"}) );
-                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this,  this.stateful_controller.preparePayload({success : true, data : { username: this.client.username, state: 'offline' }, log_message : "user status change"})); // to contacts...
+                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
+                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts...
                 this.stateful_controller.clientDisconnect(this.client.user_id, this);
             }, 1000 * 60 * 60 * 3);
 
@@ -97,24 +108,26 @@ export class wsSession {
 
         this.soc.on(IPayloadRequestType.ONLINE_STATUS, async () => this.stateful_controller.errorHandler(this, async () => {
 
+            const is_connecting = this.cancelPendingDisconnection();
+            
             clearTimeout(this.online_idle_timeout);
             this.online_idle_timeout = setTimeout(() => {
-                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({success : true, data : {state : "offline"}, log_message : "user state has been changed"}) );
-                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({success : true, data : { username: this.client.username, state: 'offline' }, log_message : "user status change"})); // to contacts...
+                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
+                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts...
                 this.is_online = false;
             }, 1000 * 60 * 5);
 
-            if (!this.is_online) {
+            if (!this.is_online && !is_connecting) {
                 this.is_online = true;
-                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({success : true, data : {state : "online"}, log_message : "user state has been changed"}) );
-                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this,  this.stateful_controller.preparePayload({success : true, data : { username: this.client.username, state: 'online' }, log_message : "user status change"})); // to contacts... //on
+                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "online" }, log_message: "user state has been changed" }));
+                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'online' }, log_message: "user status change" })); // to contacts... //on
             }
         })());
 
         this.soc.on("message", async (raw_data) => this.stateful_controller.
             errorHandler(this, async () => {
                 if (!this.is_banned && raw_data)
-                    await this.handleDate(raw_data)
+                    await this.handleData(raw_data)
                 else
                     this.stateful_controller.clientDisconnect(this.client.user_id, this);
             })()
@@ -124,15 +137,21 @@ export class wsSession {
             clearTimeout(this.online_idle_timeout);
             clearTimeout(this.session_idle_timeout);
 
-            this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({success : true, data : {state : "offline"}, log_message : "user state has been changed"}) );
-            this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this,  this.stateful_controller.preparePayload({success : true, data : { username: this.client.username, state: 'offline' }, log_message : "user status change"})); // to contacts... //off
-            this.stateful_controller.clientDisconnect(this.client.user_id, this);
+            this.graceful_disconnection = setTimeout( () => {
+                this.is_online = false;
+
+                this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts... //off
+                this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
+                this.stateful_controller.clientDisconnect(this.client.user_id, this);
+
+            }, 1000 * 10);
+
         })
     }
 
 
 
-    private async handleDate(raw_data: any): Promise<void> {
+    private async handleData(raw_data: any): Promise<void> {
         const result = action_schema.safeParse(raw_data);
 
         if (!result.success)
@@ -171,7 +190,7 @@ export class wsSession {
                         const isActive = this.stateful_controller.active_clients.has(get_contacts.internal![i]);
 
                         return {
-                            client: contact, 
+                            client: contact,
                             onlineState: isActive ? "online" : "offline"
                         };
                     }) || [];
@@ -287,6 +306,7 @@ export class wsSession {
                             return {
                                 username: client.username,
                                 nickname: client.nickname,
+                                avatar : client.avatar,
                             };
                         };
 
@@ -302,24 +322,17 @@ export class wsSession {
                 break;
             case IPayloadRequestType.SEND_MESSAGE:
                 {
+                    // this handles when a user sends a message in a room
                     const room_public_id = data.payload.room_public_id;
                     const content = data.payload.msg_content;
                     const iv = data.payload.iv;
 
                     const result = await this.app_layer.sendMessage(room_public_id, iv, content, this.client);
-
                     if (!result.success)
                         return;
 
-                    this.write(IPayloadResponseType.ONSEND_MESSAGE, this.stateful_controller.preparePayload({
-                        success: result.success, data: {
-                            enc_message: result.data,
-                            iv: iv,
-                        }, log_message: result.log_message
-                    }));
-
-
-                    //broadcast to users in the room,
+                    // we broadcast the message to everyone in the room immediately
+                    // this makes the app feel fast (optimistic delivery)
                     this.stateful_controller.broadcastMessage(IPayloadResponseType.ONRECEIVE_MESSAGE, result.internal!.room_id, this, this.stateful_controller.preparePayload({
                         success: result.success, data: {
                             enc_message: result.data,
@@ -327,18 +340,32 @@ export class wsSession {
                         }, log_message: result.log_message
                     }));
 
+                    // we also send the message back to the sender so they can see it in their chat
+                    this.write(IPayloadResponseType.ONRECEIVE_MESSAGE, this.stateful_controller.preparePayload({
+                        success: result.success, data: {
+                            enc_message: result.data,
+                            iv: iv,
+                        }, log_message: result.log_message
+                    }));
 
-                    this.app_layer.validateMessage(content, iv, result.internal!.enc_key, this.client.user_id, async (total_strike? : number) => {
-                        
+
+                    // then we call the ai service in the background to check if the message is toxic
+                    // if the ai says it is toxic, we delete the message from the chat for everyone
+                    this.app_layer.validateMessage(content, iv, result.internal!.enc_key, this.client.user_id, async (total_strike?: number) => {
+
+                        // remove the bad message from the database
                         await this.app_layer.deleteMessage(result.data!.public_id);
+                        await this.app_layer.deleteChatRoomLastMessage(result.internal!.room_id, result.data!.public_id);
 
-                        this.write(IPayloadResponseType.ONDELETE_MESSAGE, this.stateful_controller.preparePayload( {success : true, data : {msg_public_id : result.data!.public_id, room_public_id : result.data!.room_public_id}, log_message : "message has been banned"} ) );
-                        this.stateful_controller.broadcastMessage(IPayloadResponseType.ONDELETE_MESSAGE, result.internal!.room_id, this, this.stateful_controller.preparePayload( {success : true, data : {msg_public_id : result.data!.public_id, room_public_id : result.data!.room_public_id}, log_message : "message has been banned"} ) );
-                        
-                        if (total_strike && total_strike >= IPayloadResponseType.MAX_STRIKE)
-                        {
+                        // notify the sender about the strike they got
+                        this.write(IPayloadResponseType.ONDELETE_MESSAGE, this.stateful_controller.preparePayload({ success: true, data: { msg_public_id: result.data!.public_id, room_public_id: result.data!.room_public_id, total_strike: total_strike || 0 }, log_message: "message has been deleted by ai moderation" }));
+                        // notify everyone else to remove the message from their screen
+                        this.stateful_controller.broadcastMessage(IPayloadResponseType.ONDELETE_MESSAGE, result.internal!.room_id, this, this.stateful_controller.preparePayload({ success: true, data: { msg_public_id: result.data!.public_id, room_public_id: result.data!.room_public_id }, log_message: "message has been deleted by ai moderation" }));
+
+                        // if they reached 3 strikes, we ban them right now
+                        if (total_strike && total_strike >= IPayloadResponseType.MAX_STRIKE) {
                             this.is_banned = true;
-                            this.write(IPayloadResponseType.ONBAN, this.stateful_controller.preparePayload({success : true, log_message : "You have been permenantly banned for toxic behaviour"}));
+                            this.write(IPayloadResponseType.ONBAN, this.stateful_controller.preparePayload({ success: true, log_message: "you have been permanently banned for toxic behaviour" }));
                         }
                     });
                 }
@@ -347,9 +374,55 @@ export class wsSession {
             case IPayloadRequestType.UPDATE_LAST_READ:
                 {
                     const room_public_id = data.payload.room_public_id;
-                    const r_result = await this.app_layer.updateLastReadMessage(this.client.user_id, room_public_id);
+                    const read_receipts = data.payload.read_receipts;
+                    const r_result = await this.app_layer.updateLastReadMessage(this.client.user_id, room_public_id, read_receipts);
 
-                    //might ack later...
+                    if (r_result.success && read_receipts) {
+                        this.stateful_controller.broadcastMessage(
+                            IPayloadResponseType.ONMESSAGE_READ,
+                            r_result.internal!,
+                            this,
+                            this.stateful_controller.preparePayload({
+                                success: true,
+                                data: { room_public_id: room_public_id },
+                                log_message: "messages read"
+                            })
+                        );
+                    }
+                }
+                break;
+
+            case IPayloadRequestType.UPDATE_NICKNAME:
+                {
+                    const new_nickname = data.payload.nickname;
+                    const r_result = await this.app_layer.updateNickname(this.client.user_id, new_nickname);
+                    if (r_result.success) {
+                        this.client.nickname = new_nickname;
+                        const payload = this.stateful_controller.preparePayload({
+                            success: true,
+                            data: { username: this.client.username, nickname: new_nickname },
+                            log_message: "Nickname updated"
+                        });
+                        this.write(IPayloadResponseType.ONUPDATE_NICKNAME, payload);
+                        this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONUPDATE_NICKNAME, this.client.user_id, this, payload);
+                    }
+                }
+                break;
+
+            case IPayloadRequestType.UPDATE_AVATAR:
+                {
+                    const new_avatar = data.payload.avatar;
+                    const r_result = await this.app_layer.updateAvatar(this.client.user_id, new_avatar);
+                    if (r_result.success) {
+                        this.client.avatar = new_avatar;
+                        const payload = this.stateful_controller.preparePayload({
+                            success: true,
+                            data: { username: this.client.username, avatar: new_avatar },
+                            log_message: "Avatar updated"
+                        });
+                        this.write(IPayloadResponseType.ONUPDATE_AVATAR, payload);
+                        this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONUPDATE_AVATAR, this.client.user_id, this, payload);
+                    }
                 }
                 break;
 
@@ -402,8 +475,13 @@ export class wsSession {
                     const result = await this.app_layer.sendRejoinRequest(room_public_id, username, this.client);
                     this.write(IPayloadResponseType.ONREJOIN_REQUEST, this.stateful_controller.preparePayload({ success: result.success, log_message: result.log_message }));
 
-                    if (result.success)
+                    if (result.success) {
                         this.stateful_controller.broadcastRequest(IPayloadResponseType.ONRECEIVE_REJOIN, result.internal!, this, this.stateful_controller.preparePayload(result));
+
+                        const notificaiton = await this.app_layer.pushNotification(result.internal!, ENotificationType.RECEIVE_REQUEST, { type: ENotificationType.RECEIVE_REQUEST, request: result.data! });
+                        if (notificaiton.success)
+                            this.stateful_controller.broadcastNotificationToUser(IPayloadResponseType.ONTRIGGER_NOTIFICATION, result.internal!, this, this.stateful_controller.preparePayload(notificaiton));
+                    }
 
                 }
                 break;

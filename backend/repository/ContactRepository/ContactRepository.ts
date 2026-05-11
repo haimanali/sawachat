@@ -8,6 +8,7 @@ import { IContactRepository } from "./IContactRepository.js";
 import { IClient } from "../../domain/IClient.js";
 import { IClientRecord } from "../../entity/IClientRecord.js";
 
+// this repository handles all the sql queries for contacts and requests
 export class ContactRepositiry implements IContactRepository
 {
     public static getInstance(db_conn : DBConn) : ContactRepositiry
@@ -27,6 +28,7 @@ export class ContactRepositiry implements IContactRepository
     }
 
 
+    // internal helper to get request details from the database
     private async getRequestByID(request_id : number) : Promise<IRequest>
     {
         const sql = "select r.request_id, BIN_TO_UUID(r.public_id) as public_id, r.sender_id, r.receiver_id, c.username, c.nickname, r.status, r.room_id, r.type, r.created_at from Request r join Client c on c.user_id = r.sender_id where r.request_id = ?";
@@ -36,8 +38,8 @@ export class ContactRepositiry implements IContactRepository
         return request;
     }
 
-    //overrides
 
+    // checks if there is already a pending or accepted request between two users
     public async isRequestPending(r_user_id: number, s_user_id: number, type : string): Promise<IRepositoryLayerResponse<boolean>> {
         const sql = "select request_id, BIN_TO_UUID(public_id) as public_id, sender_id, receiver_id, status, created_at from Request where ((sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)) and (status = 'pending' or status = 'accepted') and type = ?";
         const result = await this.db_conn.executeQuery<IRequestRecord>(sql, [s_user_id, r_user_id, r_user_id, s_user_id, type]);
@@ -56,6 +58,7 @@ export class ContactRepositiry implements IContactRepository
         return return_data;
     }
 
+    // inserts a new friend request record into the database
     public async insertContactRequest(public_id : string, r_user_id: number, s_user_id: number): Promise<IRepositoryLayerResponse<IRequest>> {
         const sql = "insert into Request (public_id, sender_id, receiver_id) values (UUID_TO_BIN(?), ?, ?)";
         const result = await this.db_conn.executeUpdate(sql, [public_id, s_user_id, r_user_id]);
@@ -72,6 +75,7 @@ export class ContactRepositiry implements IContactRepository
         };
     }
 
+    // handles rejoin requests when a user wants to come back to a chat
     public async updateRejoinRequest(status: string, request_id: number): Promise<IRepositoryLayerResponse<number>> {
         const sql = "update Request set status = ? where request_id = ? and type = 'reactive'";
         const result = await this.db_conn.executeUpdate(sql, [status, request_id]);
@@ -86,11 +90,12 @@ export class ContactRepositiry implements IContactRepository
 
         return {
             success : true,
-            data : request.room_id!,
+            data : request.room_id,
             log_message : "rejoin request updated",
         };
     }
 
+    // updates the status of a friend request (accepted/rejected)
     public async updateContactRequest(status: string, r_user_id: number, s_user_id: number): Promise<IRepositoryLayerResponse> {
         const sql = "update Request set status = ? where sender_id = ? and receiver_id = ? and status = 'pending' and type = 'contact'; ";
         const result = await this.db_conn.executeUpdate(sql, [status, s_user_id, r_user_id]);
@@ -119,7 +124,7 @@ export class ContactRepositiry implements IContactRepository
     }
 
     public async getRequestsByUserID(r_user_id: number): Promise<IRepositoryLayerResponse<IRequest []>> {
-        let sql = `select BIN_TO_UUID(r.public_id) as public_id, c.username, c.nickname, r.created_at, r.type 
+        let sql = `select BIN_TO_UUID(r.public_id) as public_id, c.username, c.nickname, c.avatar, r.created_at, r.type 
         from Request r join Client c on r.sender_id = c.user_id
          where r.receiver_id = ? and r.status = 'pending' order by r.created_at desc`;
 
@@ -231,7 +236,7 @@ export class ContactRepositiry implements IContactRepository
     }
 
     public async getContactsByUserId(user_id: number): Promise<IRepositoryLayerResponse<IClient[]>> {
-        const sql = "select cl.user_id, cl.username, cl.nickname from Contact c join Client cl on cl.user_id = c.contact_id where c.user_id = ?";
+        const sql = "select cl.user_id, cl.username, cl.nickname, TO_BASE64(cl.avatar) as avatar from Contact c join Client cl on cl.user_id = c.contact_id where c.user_id = ?";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [user_id]);
 
         return {

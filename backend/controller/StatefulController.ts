@@ -7,8 +7,11 @@ import { DBConn } from "../repository/DBConn.js";
 import { IApiApplication } from "../Application/IApiApplication.js";
 import { IAppLayerResponse, IPayloadInterface, IPayloadResponseType } from "../responseFormat.js";
 
+// this controller keeps track of all online users and active rooms
+// it handles sending messages to the right people in real time
 export class StatefulController {
 
+    // this function tells your friends when you go online or offline
     public async broadcastConnectionState(type: string, user_id: number, wsSession: wsSession, paylaod: any) {
         this.client_contact.get(user_id)?.forEach((contactID) => {
             this.active_clients.get(contactID)?.forEach((other_wsSession) => {
@@ -20,10 +23,15 @@ export class StatefulController {
         });
     }
 
+    // this handles cleaning up when someone closes the app
     public async clientDisconnect(user_id: number, wsSession: wsSession): Promise<void> {
-        this.active_clients.get(user_id)!.delete(wsSession);
+        const client_sessions = this.active_clients.get(user_id);
+        if (!client_sessions)
+            return;
 
-        if (this.active_clients.get(user_id)!.size === 0) {
+        client_sessions.delete(wsSession);
+
+        if (client_sessions.size === 0) {
             this.client_room.get(user_id)?.forEach((room) => {
                 this.active_rooms.get(room)?.delete(user_id);
 
@@ -38,6 +46,7 @@ export class StatefulController {
 
     }
 
+    // this sends a request to another user
     public async broadcastRequest(type: string, r_user_id: number, init_wsSession: wsSession, payload: any): Promise<void> {
         this.active_clients.get(r_user_id)?.forEach((other_wsSession) => {
             if (other_wsSession === init_wsSession) return;
@@ -46,6 +55,7 @@ export class StatefulController {
         });
     }
 
+    // this sends a private notification to a specific user
     public async broadcastNotificationToUser(type: string, s_user_id: number, init_wsSession: wsSession, payload: any): Promise<void> {
         this.active_clients.get(s_user_id)?.forEach((other_wsSession) => {
             if (other_wsSession === init_wsSession) return;
@@ -55,6 +65,7 @@ export class StatefulController {
     }
 
 
+    // this sends a notification to everyone in a room
     public async broadcastNotificationToRoom(type: string, room_id: number, init_wsSession: wsSession, payload: any): Promise<void> {
         this.active_rooms.get(room_id)?.forEach((user_id) => {
             this.active_clients.get(user_id)?.forEach((other_wsSession) => {
@@ -64,6 +75,7 @@ export class StatefulController {
         });
     }
 
+    // this broadcasts room updates
     public async broadcastRoom(type: string, s_user_id: number, init_wsSession: wsSession, payload: any): Promise<void> {
         this.active_clients.get(s_user_id)?.forEach((other_wsSession) => {
             if (other_wsSession === init_wsSession) return;
@@ -72,9 +84,12 @@ export class StatefulController {
         });
     }
 
+
+    // this is the main function for sending a message to everyone in a chat room
     public async broadcastMessage(type: string, room_id: number, init_wsSession: wsSession, payload: any, callback?: Function): Promise<void> {
         this.active_rooms.get(room_id)?.forEach((user_id) => {
             this.active_clients.get(user_id)?.forEach((other_wsSession) => {
+                // we don't send the message back to the person who sent it
                 if (other_wsSession === init_wsSession) return;
                 other_wsSession?.write(type, payload);
             });

@@ -3,7 +3,8 @@ import { IRepositoryLayerResponse, IServiceLayerResponse } from "../../responseF
 
 export interface IMessageRepository
 {
-    updateMessageIsDel(msg_public_id: string): Promise<IRepositoryLayerResponse>;
+    updateMessageIsDel(msg_public_id: string): Promise<IRepositoryLayerResponse<IMessage>>;
+    updateMessagesReadInRoom(user_id: number, room_id: number): Promise<IRepositoryLayerResponse>;
     updateAllMessageDelivered(user_id: number): Promise<IRepositoryLayerResponse<IMessage []>>;
     updateMessageDeliverRecord(public_id: string, is_delivered: boolean): Promise<IRepositoryLayerResponse>;
     insertMessageRecord(public_id : string, iv: string, content : string, s_user_id : number, room_id : number) : Promise<IRepositoryLayerResponse<IMessage>>;

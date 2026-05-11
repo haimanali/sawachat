@@ -8,11 +8,11 @@ export default function RequestsTab() {
 
     const { socket, requests, loadingRequests, setaddContactPOPUP, notifications, setNotifCountType, setNotifications } = useSocket();
 
-    const handleNotif = (notif_public_id : string, req_public_id : string) => {
+    const handleNotif = (notif_public_id: string, req_public_id: string) => {
         const request_payload = {
             type: IPayloadRequestType.MARK_NOTIF_READ,
             payload: {
-                notif_public_id : notif_public_id,
+                notif_public_id: notif_public_id,
             },
         };
 
@@ -20,12 +20,12 @@ export default function RequestsTab() {
         setNotifCountType((prev) => {
             return {
                 ...prev,
-                [ENotificationType.RECEIVE_REQUEST]: Math.max(0,  prev[ENotificationType.RECEIVE_REQUEST] - 1),
+                [ENotificationType.RECEIVE_REQUEST]: Math.max(0, prev[ENotificationType.RECEIVE_REQUEST] - 1),
             };
         });
 
         setNotifications((prev) => {
-            const { [req_public_id] : _, ...rest } = prev[ENotificationType.RECEIVE_REQUEST] || {};
+            const { [req_public_id]: _, ...rest } = prev[ENotificationType.RECEIVE_REQUEST] || {};
             return {
                 ...prev,
                 [ENotificationType.RECEIVE_REQUEST]: rest,
@@ -70,146 +70,136 @@ export default function RequestsTab() {
                             <p style={{ color: "rgba(0, 0, 0, 0.4)" }}>no requests were found</p>
                         </div>
                     ) : (
-                        requests.map((req: IRequestPublic) => { 
+                        requests.map((req: IRequestPublic) => {
                             const req_notif = notifications[ENotificationType.RECEIVE_REQUEST][req.public_id] || {};
 
-                            return(
-                            <div key={req.public_id} className="request-item" style={{
-                                display: "flex",
-                                flexDirection: "column", // Stack content and buttons for better mobile/sidebar fit
-                                padding: "12px 16px",
-                                borderBottom: "1px solid var(--border)",
-                                gap: "8px"
-                            }}>
-                                <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px" }}>
-                                    {/* 1. Time on the far left */}
-                                    <span style={{ fontSize: "0.75rem", color: "var(--text-sub)", minWidth: "45px" }}>
-                                        {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-
-                                    {/* 2. Middle: Nickname and Username */}
-                                    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                                        <strong style={{ fontSize: "0.95rem", color: "var(--text-main)" }}>
-                                            {req.nickname}
-                                        </strong>
-                                        <span style={{ fontSize: "0.8rem", opacity: 0.5, color: "var(--text-main)" }}>
-                                            @{req.username}
+                            return (
+                                <div key={req.public_id} className="request-item" style={{
+                                    display: "flex",
+                                    flexDirection: "column", // Stack content and buttons for better mobile/sidebar fit
+                                    padding: "12px 16px",
+                                    borderBottom: "1px solid var(--border)",
+                                    gap: "8px"
+                                }}>
+                                    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px" }}>
+                                        {/* 1. Time on the far left */}
+                                        <span style={{ fontSize: "0.75rem", color: "var(--text-sub)", minWidth: "45px" }}>
+                                            {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
+
+                                        {/* 2. Middle: Nickname and Username */}
+                                        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                                            <strong style={{ fontSize: "0.95rem", color: "var(--text-main)" }}>
+                                                {req.nickname}
+                                            </strong>
+                                            <span style={{ fontSize: "0.8rem", opacity: 0.5, color: "var(--text-main)" }}>
+                                                @{req.username}
+                                            </span>
+                                        </div>
+
+                                        {/* 3. Avatar on the right */}
+                                        <div className="request-avatar" style={{
+                                            width: "36px",
+                                            height: "36px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "var(--primary)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            color: "white",
+                                            fontSize: "0.8rem"
+                                        }}>
+                                            {req.nickname.charAt(0).toUpperCase()}
+                                        </div>
                                     </div>
 
-                                    {/* 3. Avatar on the right */}
-                                    <div className="request-avatar" style={{
-                                        width: "36px",
-                                        height: "36px",
-                                        borderRadius: "50%",
-                                        backgroundColor: "var(--primary)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "white",
-                                        fontSize: "0.8rem"
-                                    }}>
-                                        {req.nickname.charAt(0).toUpperCase()}
+                                    {/* 4. Action Buttons Row */}
+                                    <div style={{ display: "flex", gap: "8px", marginLeft: "57px" }}>
+                                        {req.type === "contact" && <>
+
+                                            <button
+                                                onClick={() => {
+
+                                                    const request_payload = {
+                                                        type: IPayloadRequestType.VERDICT_REQUEST,
+                                                        payload: {
+                                                            username: req.username,
+                                                            req_public_id: req.public_id,
+                                                            verdict: true,
+                                                        }
+                                                    }
+
+                                                    socket?.emit("message", request_payload);
+
+                                                    handleNotif(req_notif.public_id, req.public_id);
+                                                }}
+                                                className="btn-small btn-primary"
+                                                style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
+                                            >
+                                                Accept
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    const request_payload = {
+                                                        type: IPayloadRequestType.VERDICT_REQUEST,
+                                                        payload: {
+                                                            username: req.username,
+                                                            req_public_id: req.public_id,
+                                                            verdict: false,
+                                                        }
+                                                    }
+                                                    socket?.emit("message", request_payload);
+
+                                                    handleNotif(req_notif.public_id, req.public_id);
+                                                }}
+                                                className="btn-small btn-primary"
+                                                style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "var(--error)" }}
+                                            >
+                                                Reject
+                                            </button>
+                                        </>
+
+                                        }
+
+                                        {req.type === "reactive" && <>
+                                            <button
+                                                onClick={() => {
+                                                    const request_payload = {
+                                                        type: IPayloadRequestType.VERDICT_REJOIN,
+                                                        payload: {
+                                                            req_public_id: req.public_id,
+                                                            username: req.username,
+                                                            verdict: true,
+                                                        },
+                                                    };
+
+                                                    socket.emit("message", request_payload);
+
+                                                    handleNotif(req_notif.public_id, req.public_id);
+                                                }}
+
+                                                className="btn-small btn-primary"
+                                                style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
+                                            >
+                                                Rejoin
+                                            </button>
+
+
+                                            <button
+                                                onClick={() => {
+
+                                                }}
+                                                className="btn-small btn-primary"
+                                                style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "var(--error)" }}
+                                            >
+                                                Reject
+                                            </button></>
+                                        }
                                     </div>
                                 </div>
-
-                                {/* 4. Action Buttons Row */}
-                                <div style={{ display: "flex", gap: "8px", marginLeft: "57px" }}>
-                                    {req.type === "contact" && <>
-
-                                        <button
-                                            onClick={() => {
-
-                                                const request_payload = {
-                                                    type: IPayloadRequestType.VERDICT_REQUEST,
-                                                    payload: {
-                                                        username: req.username,
-                                                        req_public_id: req.public_id,
-                                                        verdict: true,
-                                                    }
-                                                }
-
-                                                socket?.emit("message", request_payload);
-
-                                                handleNotif(req_notif.public_id, req.public_id);
-                                            }}
-                                            className="btn-small btn-primary"
-                                            style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
-                                        >
-                                            Accept
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                const request_payload = {
-                                                    type: IPayloadRequestType.VERDICT_REQUEST,
-                                                    payload: {
-                                                        username: req.username,
-                                                        req_public_id: req.public_id,
-                                                        verdict: false,
-                                                    }
-                                                }
-                                                socket?.emit("message", request_payload);
-
-                                                handleNotif(req_notif.public_id, req.public_id);
-                                            }}
-                                            className="btn-small btn-primary"
-                                            style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "var(--error)" }}
-                                        >
-                                            Reject
-                                        </button>
-                                    </>
-
-                                    }
-
-                                    {req.type === "reactive" && <>
-                                        <button
-                                            onClick={() => {
-                                                const request_payload = {
-                                                    type: IPayloadRequestType.VERDICT_REJOIN,
-                                                    payload: {
-                                                        req_public_id: req.public_id,
-                                                        username: req.username,
-                                                        verdict: true,
-                                                    },
-                                                };
-
-                                                socket.emit("message", request_payload);
-
-                                                handleNotif(req_notif.public_id, req.public_id);
-                                            }}
-
-                                            className="btn-small btn-primary"
-                                            style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
-                                        >
-                                            Rejoin
-                                        </button>
-
-
-                                        <button
-                                            onClick={() => {
-
-                                            }}
-                                            className="btn-small btn-primary"
-                                            style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "var(--error)" }}
-                                        >
-                                            Reject
-                                        </button></>
-                                    }
-
-
-                                    <button
-                                        onClick={() => {
-
-                                        }}
-                                        className="btn-small btn-primary "
-                                        style={{ padding: "4px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer", border: "1px solid var(--border)", background: "var(--secondary)", color: "black" }}
-                                    >
-                                        Block
-                                    </button>
-                                </div>
-                            </div>
-                        )})
+                            )
+                        })
                     )}
                 </div>
             </>)}

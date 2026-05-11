@@ -7,6 +7,7 @@ import { IRepositoryLayerResponse } from "../../responseFormat.js";
 import { DBConn } from "../DBConn.js";
 import { INotificationRepository } from "./INotificationRepository.js";
 
+// this repository handles all the sql queries for notifications
 export class NotificationRepository implements INotificationRepository {
     public static getInstance(db_conn: DBConn): NotificationRepository {
         if (NotificationRepository.instance)
@@ -22,8 +23,8 @@ export class NotificationRepository implements INotificationRepository {
         this.db_conn = db_conn;
     }
 
-    //overrides 
 
+    // helper to find a notification in the database by its id
     public async getNotificationById(notification_id: number): Promise<IRepositoryLayerResponse<INotification<NotificationTypeUnion>>> {
         const sql = "select BIN_TO_UUID(public_id) as public_id, type, created_at, payload from Notification where notification_id = ?";
         const result = await this.db_conn.executeQuery<INotificationRecord<NotificationTypeUnion>>(sql, [notification_id]);
@@ -38,6 +39,7 @@ export class NotificationRepository implements INotificationRepository {
         };
     }
 
+    // this gets the latest notifications for a user, grouped by type
     public async getNotificationsByUserID(user_id: number, is_read: boolean): Promise<IRepositoryLayerResponse<INotification<NotificationTypeUnion>[]>> {
         const sql = `
             SELECT * FROM (
@@ -59,6 +61,7 @@ export class NotificationRepository implements INotificationRepository {
         };
     }
 
+    // this counts how many unread notifications a user has for each category
     public async getNotificationCountByID(user_id: number): Promise<IRepositoryLayerResponse<INotificaitonTypeCount>> {
         const sql = `select type, count(*) as total from Notification where user_id = ? and is_read = false group by type`
         const result = await this.db_conn.executeQuery<{ type: ENotificationType, total: number }>(sql, [user_id]);
@@ -80,6 +83,7 @@ export class NotificationRepository implements INotificationRepository {
         };
     }
 
+    // inserts a new notification into the database
     public async insertNotificationRecord(public_id: string, user_id: number, payload: NotificationTypeUnion, type: ENotificationType): Promise<IRepositoryLayerResponse<INotification<NotificationTypeUnion>>> {
         const sql = "insert into Notification (public_id, user_id, type, payload, is_read) values (UUID_TO_BIN(?), ?, ?, ?, ?) ";
         const result = await this.db_conn.executeUpdate(sql, [public_id, user_id, type, JSON.stringify(payload), false]);
@@ -98,6 +102,7 @@ export class NotificationRepository implements INotificationRepository {
         };
     }
 
+    // marks multiple notifications as read at once based on their type
     public async updateNotificationReadByType(type: ENotificationType, is_read: boolean): Promise<IRepositoryLayerResponse> {
         const sql = "update Notification set is_read = ? where type = ?";
         const result = await this.db_conn.executeUpdate(sql, [is_read, type]);
@@ -114,6 +119,7 @@ export class NotificationRepository implements INotificationRepository {
         };
     }
 
+    // marks a single specific notification as read using its public id
     public async updateNotificationReadByPID(notif_public_id: string, is_read: boolean): Promise<IRepositoryLayerResponse> {
         const sql = "update Notification set is_read = ? where public_id = UUID_TO_BIN(?)";
         const result = await this.db_conn.executeUpdate(sql, [is_read, notif_public_id]);
@@ -129,6 +135,4 @@ export class NotificationRepository implements INotificationRepository {
             log_message: "noification marked as read",
         };
     }
-
-
-}
+}

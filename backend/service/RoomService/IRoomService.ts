@@ -1,10 +1,13 @@
 import { IClient } from "../../domain/IClient.js";
 import { IRoom } from "../../domain/IRoom.js";
 import { IMessagePublic } from "../../public/IMessagePublic.js";
+import { IRoomPublic } from "../../public/IRoomPublic.js";
 import { IServiceLayerResponse } from "../../responseFormat.js";
 
+// this defines the functions for handling chat rooms and private messages
 export interface IRoomService
 {
+    performDeleteLastMessage(room_id: number, public_id: string): Promise<IServiceLayerResponse>;
     performUpdateLastMessage(message: IMessagePublic, room_id : number): Promise<IServiceLayerResponse>;
     performUpdateLastRead(user_id: number, room_id: number): Promise<IServiceLayerResponse>;
     performActivateContact(user_id: number, room_id: number): Promise<IServiceLayerResponse>;

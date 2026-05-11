@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSocket } from "../../../hooks/useSocket";
+import { useApp } from "../../../hooks/useApp";
 import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
 import { IRoomPublic } from "../../../interfaces/public/IRoomPublic";
 import NotificationDot from "../../../componets/notificationDot/NotificationDot";
@@ -11,24 +12,23 @@ import { initKey } from "../../../services/initKey";
 
 const DecryptedPreview = React.memo(({ contentx64, ivx64, encKey }: { contentx64: string, ivx64: string, encKey: string }) => {
     const [decrypted, setDecrypted] = useState<string>("...");
-
     useEffect(() => {
-        let isMounted = true; 
-        
+        let isMounted = true;
+
         const runDecryption = async () => {
-                const key = await initKey(encKey);
-                const text = await msgDecryption(contentx64, key, ivx64);
-                if (isMounted) setDecrypted(text);
+            const key = await initKey(encKey);
+            const text = await msgDecryption(contentx64, key, ivx64);
+            if (isMounted) setDecrypted(text);
         };
 
         runDecryption();
         return () => { isMounted = false; };
-    }, [contentx64, ivx64, encKey]); 
+    }, [contentx64, ivx64, encKey]);
     return <>{decrypted}</>;
 });
 
 export default function ChatRoomTab() {
-
+    const { t } = useApp();
     const { socket, userState,
         rooms, activeRoomSetup, activeRoomRef, setActiveRoomSetup, loadingRooms, setMsgInputDOM, setRoomSettingsMenu,
         roomCache, messages_cursor, setHasMoreMessages, setMessages, notifications, contacts } = useSocket();
@@ -89,7 +89,7 @@ export default function ChatRoomTab() {
                 <div className="chat-list" id="chat-list" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                     {rooms.length === 0 ? (
                         <div style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                            <p style={{ color: "rgba(0, 0, 0, 0.4)" }}>no rooms where found</p>
+                            <p style={{ color: "rgba(0, 0, 0, 0.4)" }}>{t('no_rooms')}</p>
                         </div>
                     ) : (
                         rooms.map((room: IRoomPublic) => {
@@ -115,11 +115,10 @@ export default function ChatRoomTab() {
                                         /* ... existing onClick logic ... */
                                         setActiveRoomSetup(room);
 
-
                                     }}
                                 >
                                     {/* 1. Avatar */}
-                                    <UserAvatar mode={contacts[room.room_subname]?.onlineState || 'offline'} nickname={contacts[room.room_subname]?.client.nickname || room.room_name} />
+                                    <UserAvatar mode={contacts[room.room_subname]?.onlineState || 'offline'} nickname={contacts[room.room_subname]?.client.nickname || room.room_name} image={contacts[room.room_subname]?.client.avatar} />
 
                                     {/* 2. Middle: Room Details & Last Message */}
                                     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -152,15 +151,28 @@ export default function ChatRoomTab() {
                                         }}>
                                             {room.last_message_payload ? (
                                                 <>
-                                                    <strong>{room.last_message_payload.username === userState.username ? "You" : room.last_message_payload.username}:</strong>{" "}
-                                                    <DecryptedPreview
-                                                        contentx64={room.last_message_payload.content}
-                                                        ivx64={room.last_message_payload.iv}
-                                                        encKey={room.enc_key}
-                                                    />
+                                                    <strong>
+                                                        {room.last_message_payload.username === userState.username
+                                                            ? t('you')
+                                                            : room.last_message_payload.username}:
+                                                    </strong>{" "}
+
+                                                    {room.last_message_payload.is_del ? (
+                                                        <span style={{ fontStyle: "italic", opacity: 0.6 }}>
+                                                            {t('no_message')}
+                                                        </span>
+                                                    ) : (
+                                                        <DecryptedPreview
+                                                            contentx64={room.last_message_payload.content}
+                                                            ivx64={room.last_message_payload.iv}
+                                                            encKey={room.enc_key}
+                                                        />
+                                                    )}
                                                 </>
                                             ) : (
-                                                <span style={{ fontStyle: "italic", opacity: 0.6 }}>No messages yet.</span>
+                                                <span style={{ fontStyle: "italic", opacity: 0.6 }}>
+                                                    {t('no_messages')}
+                                                </span>
                                             )}
                                         </span>
                                     </div>

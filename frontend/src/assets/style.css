@@ -1,38 +1,39 @@
 /* ═══════════════════════════════════════════════
-   DESIGN TOKENS
+   DESIGN TOKENS — 2026 Electric Blue
 ═══════════════════════════════════════════════ */
 :root {
-    --primary: #42a5f5;
-    --primary-deep: #1e88e5;
-    --primary-light: #e3f2fd;
-    --primary-glow: rgba(66, 165, 245, 0.18);
+    --primary: #3B9EFF;
+    --primary-deep: #2979E5;
+    --primary-light: rgba(59, 158, 255, 0.08);
+    --primary-glow: rgba(59, 158, 255, 0.22);
 
-    --bg: #eef4fd;
-    --surface: #ffffff;
-    --surface-alt: #f5f8ff;
+    --bg: #0B0E18;
+    --bg-subtle: rgba(255,255,255,0.03);
+    --surface: rgba(18, 24, 42, 0.88);
+    --surface-alt: rgba(24, 32, 56, 0.7);
 
-    --text: #1a1c22;
-    --text-sub: #5a6275;
-    --text-muted: #9aa3b5;
+    --text: #E4EAF6;
+    --text-sub: #94A3C4;
+    --text-muted: #5B6888;
 
-    --success: #4caf50;
-    --warning: #ff9800;
+    --success: #34D399;
+    --warning: #FBBF24;
 
-    --online : green;
-    --offline : grey;
+    --online: #34D399;
+    --offline: #5B6888;
 
-    --error: #f44336;
-    --error-bg: #fff0f0;
-    --warn-bg: #fff8e1;
+    --error: #F87171;
+    --error-bg: rgba(248, 113, 113, 0.1);
+    --warn-bg: rgba(251, 191, 36, 0.1);
 
-    --border: #e4ecf7;
+    --border: rgba(255, 255, 255, 0.06);
 
-    --r-sm: 12px;
+    --r-sm: 14px;
     --r-md: 18px;
-    --r-lg: 26px;
+    --r-lg: 24px;
 
-    --shadow: 0 8px 40px rgba(33, 90, 160, 0.10);
-    --shadow-btn: 0 6px 20px rgba(30, 136, 229, 0.30);
+    --shadow: 0 8px 48px rgba(0, 0, 0, 0.45);
+    --shadow-btn: 0 6px 24px rgba(59, 158, 255, 0.35);
     --t: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -83,27 +84,27 @@ body {
 }
 
 .orb-1 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, #90caf9, #42a5f5);
-    top: -120px;
-    right: -100px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59, 158, 255, 0.35), rgba(41, 121, 229, 0.12));
+    top: -160px;
+    right: -140px;
     animation-delay: 0s;
 }
 
 .orb-2 {
-    width: 340px;
-    height: 340px;
-    background: radial-gradient(circle, #bbdefb, #e3f2fd);
-    bottom: -100px;
-    left: -100px;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.25), rgba(59, 158, 255, 0.08));
+    bottom: -120px;
+    left: -120px;
     animation-delay: -5s;
 }
 
 .orb-3 {
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(66, 165, 245, 0.5), transparent);
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.2), transparent);
     bottom: 28%;
     right: 4%;
     animation-delay: -9s;
@@ -166,10 +167,13 @@ body {
 }
 
 .app-name {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 800;
     letter-spacing: -0.6px;
-    color: var(--text);
+    background: linear-gradient(135deg, #E4EAF6 0%, var(--primary) 50%, #38BDF8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 4px;
 }
 
@@ -214,10 +218,12 @@ body {
 .card {
     width: 100%;
     background: var(--surface);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
     border-radius: var(--r-lg);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
     padding: 28px 24px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .card-body {
@@ -318,20 +324,23 @@ body {
 .btn-outline {
     width: 100%;
     padding: 15px 24px;
-    background: transparent;
+    background: rgba(59, 158, 255, 0.06);
     color: var(--primary);
-    border: 2px solid var(--primary);
+    border: 1px solid rgba(59, 158, 255, 0.25);
     border-radius: var(--r-md);
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: var(--t);
     font-family: 'Inter', sans-serif;
+    backdrop-filter: blur(8px);
 }
 
 .btn-outline:hover {
-    background: var(--primary-light);
+    background: rgba(59, 158, 255, 0.12);
+    border-color: rgba(59, 158, 255, 0.5);
     transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(59, 158, 255, 0.15);
 }
 
 .btn-ghost {
@@ -531,6 +540,39 @@ body {
     margin-top: 6px;
 }
 
+/* input feedback */
+.input-spinner {
+    position: absolute;
+    right: 14px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(59, 158, 255, 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.input-success-icon {
+    position: absolute;
+    right: 14px;
+    color: var(--success);
+    font-size: 16px;
+    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.input-error-icon {
+    position: absolute;
+    right: 14px;
+    color: var(--error);
+    font-size: 16px;
+    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
 /* password toggle */
 .toggle-pw {
     position: absolute;
@@ -607,16 +649,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: var(--primary-light);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(59,158,255,0.15), rgba(56,189,248,0.08));
+    border: 1px solid rgba(59,158,255,0.12);
     flex-shrink: 0;
 }
 
 .feature-icon svg {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
     stroke: var(--primary);
 }
 
@@ -627,13 +670,19 @@ body {
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+    background: linear-gradient(135deg, var(--primary), #38BDF8);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 18px;
-    box-shadow: 0 8px 24px rgba(30, 136, 229, 0.25);
+    box-shadow: 0 8px 32px rgba(59, 158, 255, 0.3);
     flex-shrink: 0;
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 8px 32px rgba(59, 158, 255, 0.3); }
+    50% { box-shadow: 0 8px 48px rgba(59, 158, 255, 0.5); }
 }
 
 .avatar-ring svg {
@@ -1085,6 +1134,84 @@ body {
 }
 
 /* ═══════════════════════════════════════════════
+   CHAT MOBILE RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .chat-container {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chat-sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 80vw;
+        max-width: 320px;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 200;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+    }
+
+    .chat-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .chat-main {
+        width: 100vw;
+    }
+
+    .chat-header {
+        padding: 0 16px;
+        height: 64px;
+    }
+
+    .chat-input-area {
+        padding: 12px 16px;
+    }
+
+    .messages-list {
+        padding: 0.75rem;
+    }
+
+    .message-content-wrapper {
+        max-width: 85%;
+    }
+
+    .dropdown-menu {
+        right: 8px;
+    }
+
+    .modal {
+        width: calc(100vw - 32px);
+        max-width: 400px;
+        padding: 24px 16px;
+    }
+
+    /* Backdrop for mobile sidebar */
+    .sidebar-backdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 10;
+        backdrop-filter: blur(2px);
+    }
+}
+
+@media (min-width: 769px) {
+    .sidebar-backdrop {
+        display: none !important;
+    }
+
+    .mobile-menu-btn {
+        display: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════
    STEP CARDS — signup.html multi-step
 ═══════════════════════════════════════════════ */
 .step-card {
@@ -1187,16 +1314,29 @@ a.btn-back {
 /* ═══════════════════════════════════════════════
    CHAT LAYOUT & DARK MODE
 ═══════════════════════════════════════════════ */
-:root[data-theme="dark"] {
-    --bg: #0b0f19;
-    --surface: #141c2f;
-    --surface-alt: #1a233a;
-    --text: #ffffff;
-    --text-sub: #94a3b8;
-    --text-muted: #64748b;
-    --border: #2e3c54;
-    --shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
-    --primary-glow: rgba(66, 165, 245, 0.08);
+/* ═══════════════════════════════════════════════
+   LIGHT MODE OVERRIDE (base is now dark-first)
+═══════════════════════════════════════════════ */
+:root[data-theme="light"] {
+    --bg: #F0F2F8;
+    --bg-subtle: rgba(0,0,0,0.02);
+    --surface: rgba(255, 255, 255, 0.92);
+    --surface-alt: rgba(240, 242, 250, 0.85);
+    --text: #1a1c2e;
+    --text-sub: #5a6080;
+    --text-muted: #8b90aa;
+    --border: rgba(0, 0, 0, 0.08);
+    --shadow: 0 8px 40px rgba(100, 100, 180, 0.12);
+    --primary-glow: rgba(108, 99, 255, 0.12);
+    --error-bg: rgba(248, 113, 113, 0.08);
+    --warn-bg: rgba(251, 191, 36, 0.06);
+}
+
+:root[data-theme="light"] .app-name {
+    background: linear-gradient(135deg, #1a1c2e 0%, var(--primary) 50%, #0EA5E9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .chat-container {
@@ -1312,6 +1452,8 @@ a.btn-back {
     display: flex;
     flex-direction: column;
     background: var(--bg);
+    min-width: 0;
+    overflow: hidden;
 }
 
 .chat-header {
@@ -1331,6 +1473,16 @@ a.btn-back {
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+/* chat-messages is the class used by the React component */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 0;
 }
 
 .message {
@@ -1458,6 +1610,7 @@ a.btn-back {
     position: relative;
     cursor: pointer;
     transition: var(--t);
+    overflow: hidden;
 }
 
 .toggle-switch::after {
@@ -1480,6 +1633,8 @@ a.btn-back {
 .toggle-switch.active::after {
     transform: translateX(22px);
 }
+
+
 
 /* Chat Header Dropdown */
 .dropdown-menu {
@@ -1578,31 +1733,48 @@ a.btn-back {
     max-width: 75%; /* Prevents text from stretching across the whole screen */
 }
 
-/* The actual colored bubble */
+/* Received message bubble (default) */
 .message-bubble {
-    background: linear-gradient(135deg, var(--primary), var(--primary-deep, var(--primary)));
-    color: white;
+    background: var(--surface);
+    color: var(--text);
     padding: 10px 14px;
-    border-radius: 16px 16px 16px 4px; /* Creates that classic "chat tail" on the bottom left */
+    border-radius: 16px 16px 16px 4px;
     font-size: 0.95rem;
     line-height: 1.4;
     position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid var(--border);
+}
+
+/* Own/sent message bubble — right side, primary color */
+.message-row.own-message .message-bubble {
+    background: linear-gradient(135deg, var(--primary), var(--primary-deep, var(--primary)));
+    color: white;
+    border: none;
+    border-radius: 16px 16px 4px 16px;
+    box-shadow: 0 2px 8px rgba(66, 165, 245, 0.25);
 }
 
 .message-bubble.deleted-message {
-    background: #f5f5f5;       /* Use 'background' instead of 'background-color' to clear the gradient */
-    background-image: none;    /* Explicitly kill the gradient from the parent class */
-    color: #888888;            
-    border: 1px solid var(--primary); /* Use your variable for consistency */
-    font-style: italic;        
+    background: var(--surface-alt);
+    background-image: none;
+    color: var(--text-muted);
+    border: 1px dashed var(--border);
+    font-style: italic;
+}
+
+.message-row.own-message .message-bubble.deleted-message {
+    background: rgba(66, 165, 245, 0.08);
+    color: var(--text-muted);
+    border: 1px dashed var(--primary);
+    font-style: italic;
 }
 
 /* Footer area inside the bubble for the dots */
 .message-bubble-footer {
     display: flex;
-    justify-content: left;
-    margin-top: 6px;
+    justify-content: flex-end;
+    margin-top: 4px;
 }
 
 /* The Dots Container */
@@ -1612,18 +1784,17 @@ a.btn-back {
     align-items: center;
 }
 
-/* Individual Dot */
+/* Individual Dot — on own messages (white bg gradient) */
 .status-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.4); /* Faded by default */
+    background-color: rgba(255, 255, 255, 0.4);
     transition: background-color 0.2s;
 }
 
-/* Active states for dots */
 .status-dot.active {
-    background-color: white; /* Bright white when true */
+    background-color: rgba(255, 255, 255, 0.95);
 }
 
 /* The Timestamp (Hidden by default) */
@@ -1647,4 +1818,83 @@ a.btn-back {
 /* THE MAGIC: When hovering over the row, show the time */
 .message-row:hover .message-time {
     opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════
+   GLOBAL ANIMATIONS & STAGGER
+═══════════════════════════════════════════════ */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-item {
+    animation: slideUpFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+}
+.chat-item:nth-child(1) { animation-delay: 0.05s; }
+.chat-item:nth-child(2) { animation-delay: 0.1s; }
+.chat-item:nth-child(3) { animation-delay: 0.15s; }
+.chat-item:nth-child(4) { animation-delay: 0.2s; }
+.chat-item:nth-child(n+5) { animation-delay: 0.25s; }
+
+.message-row {
+    animation: slideUpFade 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ═══════════════════════════════════════════════
+   RTL SUPPORT
+═══════════════════════════════════════════════ */
+[dir="rtl"] {
+    text-align: right;
+}
+[dir="rtl"] .sidebar-header {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .chat-item {
+    text-align: right;
+    flex-direction: row; /* Already row, but ensuring icon is on the correct side might require row-reverse if HTML order is fixed, but usually just padding/margin adjustments are enough. Let's keep flex-direction default and just flip margins if needed */
+}
+[dir="rtl"] .message-row {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .message-row.own-message {
+    flex-direction: row;
+}
+[dir="rtl"] .message-bubble {
+    border-radius: 16px 16px 4px 16px;
+}
+[dir="rtl"] .message-row.own-message .message-bubble {
+    border-radius: 16px 16px 16px 4px;
+}
+[dir="rtl"] .input-prefix {
+    left: auto;
+    right: 16px;
+}
+[dir="rtl"] .input-icon {
+    left: auto;
+    right: 13px;
+}
+[dir="rtl"] .toggle-switch::after {
+    left: auto;
+    right: 3px;
+}
+[dir="rtl"] .toggle-switch.active::after {
+    transform: translateX(-22px);
+}
+[dir="rtl"] .dropdown-menu {
+    right: auto;
+    left: 32px;
+}
+[dir="rtl"] .chat-header {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .chat-input-area {
+    flex-direction: row-reverse;
 }

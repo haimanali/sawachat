@@ -5,6 +5,7 @@ import { IClientRepository } from "./IClientRepository.js";
 import { IClientRecord } from "../../entity/IClientRecord.js";
 import { IRepositoryLayerResponse } from "../../responseFormat.js";
 
+// this repository handles all the mysql database calls for our users
 export class ClientRepository implements IClientRepository 
 {
     public static getInstance(db_conn : DBConn) : ClientRepository
@@ -23,19 +24,21 @@ export class ClientRepository implements IClientRepository
         this.db_conn = db_conn;
     }
 
+    // we use bcrypt to compare passwords securely
     private async validatePassword(hash_pass : string, password : string) : Promise<boolean>
     {
         const is_match = await bcrypt.compare(password, hash_pass);
         return is_match;
     }
 
+    // this hashes the password before we save it to the database
     private async hashPassword(password: string): Promise<string> {
         const hash_pass = await bcrypt.hash(password, 10);
         return hash_pass;
     }
 
-    //overrides
-    
+
+    // we save the session id so the user stays logged in
     public async insertClientSession(session_id: string, user_id: number, expire: Date): Promise<IRepositoryLayerResponse> {
         const sql = "insert into Session (session_id, user_id, expire) values (UUID_TO_BIN(?), ?, ?)";
         
@@ -50,6 +53,7 @@ export class ClientRepository implements IClientRepository
         };
     }
 
+    // this extends the session for 14 more days
     public async extendSessionByUserID(user_id: number): Promise<IRepositoryLayerResponse> {
         const MAX_AGE = 1000 * 60 * 60 * 24 * 14;
         const sql = "update Session set expire = DATE_ADD(NOW(), INTERVAL 3 HOUR) where user_id = ? and expire < ?";
@@ -64,9 +68,11 @@ export class ClientRepository implements IClientRepository
         };
     }
 
+
+    // this gets the user info using their session id from the cookie
     public async getClientBySessionID(session_id: string): Promise<IRepositoryLayerResponse<IClient>> {
         const sql = 
-        "select u.user_id, u.username, u.nickname, u.hash_pass from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW() and u.is_ban = false";
+        "select u.user_id, u.username, u.nickname, u.hash_pass, TO_BASE64(u.avatar) AS avatar from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW() and u.is_ban = false";
         
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [session_id]);
 
@@ -84,10 +90,13 @@ export class ClientRepository implements IClientRepository
                 user_id : client_record.user_id,
                 username : client_record.username,
                 nickname: client_record.nickname,
+                avatar: client_record.avatar,
             },
             log_message : "got client by session_id"
         };
     }
+
+    // this checks how many strikes the user has in total
     public async getTotalStrike(user_id: number): Promise<IRepositoryLayerResponse<number>> {
         const sql = "select strike from Client where user_id = ?";
         const result = await this.db_conn.executeQuery<{strike : number}>(sql, [user_id]);
@@ -133,7 +142,7 @@ export class ClientRepository implements IClientRepository
     }
 
     public async validateClient(username: string, password: string): Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select user_id, username, nickname, hash_pass, is_ban from Client where username = ? and is_ban = false";
+        const sql = "select user_id, username, nickname, hash_pass, is_ban, avatar from Client where username = ? and is_ban = false";
 
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
         
@@ -155,6 +164,7 @@ export class ClientRepository implements IClientRepository
                 user_id : client_record.user_id, 
                 username : client_record.username, 
                 nickname : client_record.nickname,
+                avatar: client_record.avatar,
             }, 
             log_message : "username is valid"
         } 
@@ -167,7 +177,7 @@ export class ClientRepository implements IClientRepository
 
     public async checkClientExist(username : string) : Promise<IRepositoryLayerResponse<IClient>>
     {
-        const sql = "select user_id, username, nickname from Client where username = ?";
+        const sql = "select user_id, username, nickname, avatar from Client where username = ?";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
 
         if (result.count <= 0)
@@ -182,6 +192,7 @@ export class ClientRepository implements IClientRepository
             user_id : data.user_id,
             username : data.username,
             nickname : data.nickname,
+            avatar: data.avatar,
         };
 
         return {
@@ -204,6 +215,33 @@ export class ClientRepository implements IClientRepository
     }
 
 
+    public async updateNickname(user_id: number, nickname: string): Promise<IRepositoryLayerResponse> {
+        const sql = "update Client set nickname = ? where user_id = ?";
+        const result = await this.db_conn.executeUpdate(sql, [nickname, user_id]);
+
+        if (result.affectedRows === 0)
+            throw Error("something went wrong updating nickname.");
+
+        return {
+            success: true,
+            log_message: "nickname updated",
+        };
+    }
+
+    public async updateAvatar(user_id: number, avatar: string): Promise<IRepositoryLayerResponse> {
+        const cleanBase64 = avatar.includes(',') ? avatar.split(',')[1] : avatar;
+        const sql = "update Client set avatar = FROM_BASE64(?) where user_id = ?";
+        const result = await this.db_conn.executeUpdate(sql, [cleanBase64, user_id]);
+
+        if (result.affectedRows === 0)
+            throw Error("something went wrong updating avatar.");
+
+        return {
+            success: true,
+            log_message: "avatar updated",
+        };
+    }
+
     public async insertClientRecord(username: string, nickname: string, password: string): Promise<IRepositoryLayerResponse<IClient>> {
         const sql = "insert into Client (username, nickname, hash_pass) values (?, ?, ?)";
 
@@ -224,7 +262,7 @@ export class ClientRepository implements IClientRepository
 
 
     public async getClientByUserID(user_id: number) : Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select * from Client where user_id = ? and is_ban = false";
+        const sql = "select *, TO_BASE64(avatar) as avatar from Client where user_id = ? and is_ban = false";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [user_id]);
 
         if (result.count <= 0)
@@ -236,6 +274,7 @@ export class ClientRepository implements IClientRepository
             user_id : data.user_id,
             username : data.username,
             nickname : data.nickname, 
+            avatar: data.avatar,
         };
 
         return {

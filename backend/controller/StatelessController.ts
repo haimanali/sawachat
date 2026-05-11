@@ -6,6 +6,8 @@ import { ILoginRequest, ISignUpRequest, login_schema, signup_schema } from '../r
 import { DBConn } from "../repository/DBConn.js";
 import { IApiApplication } from '../Application/IApiApplication.js'
 
+// this controller handles normal rest api requests like login and signup
+// it also sets up express middleware like cors and cookie-parser
 export class StatelessController {
 
     public static getInstance(app: express.Express, Iapp_layer: IApiApplication): StatelessController {
@@ -23,6 +25,7 @@ export class StatelessController {
         this.app_layer = Iapp_layer;
         this.app = app;
 
+        // we allow the frontend to talk to the backend using cors
         this.app.use(cors({
             origin: "http://localhost:5173",
             credentials: true,
@@ -34,7 +37,7 @@ export class StatelessController {
 
         this.initRoutes();
 
-        //error middleware
+        // this is our global error handler
         this.app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 
             if (req.path.startsWith("/api/")) {
@@ -47,6 +50,8 @@ export class StatelessController {
     }
 
 
+    // this helper function makes sure our database operations are safe
+    // it rolls back the transaction if anything fails
     private async transactionHandler(handleData: () => Promise<void>): Promise<void> {
         const conn = await DBConn.beginTransaction()
         try {
@@ -64,6 +69,7 @@ export class StatelessController {
         }
     }
 
+    // this catches any errors that happen during a request
     private errorHandler(fn: Function) {
         return async (req: Request, res: Response, next: NextFunction) => {
             try {
@@ -75,6 +81,7 @@ export class StatelessController {
         };
     }
 
+    // this makes sure the json sent by the user matches what we expect
     private validateJSON(schema: z.ZodSchema): RequestHandler {
         return (req: Request, res: Response, next: NextFunction) => {
             const result = schema.safeParse(req.body);
@@ -93,6 +100,8 @@ export class StatelessController {
         };
     }
 
+
+    // this function saves the session id in a secure cookie
     private setCookie(res: Response, auto_login: boolean, session_id: string): void {
         const cookie_options: any = { httponly: true } //add secure...
 
@@ -113,7 +122,7 @@ export class StatelessController {
                 return;
             }
 
-            const payload = await this.app_layer.authenticateBySessionID(session_id);
+            const payload = await this.app_layer.authenticateBySessionID(session_id as string);
 
             if (!payload.success) {
                 res.status(403).json({ success: false, data: req.params.username, log_message: payload.log_message });
@@ -135,6 +144,12 @@ export class StatelessController {
             });
         }));
 
+        this.app.get("/api/auth/username/check/:username", this.errorHandler(async (req: Request, res: Response) => {
+            const username = req.params.username;
+            const result = await this.app_layer.checkUsernameAvailability(username as string);
+            res.status(200).json(result);
+        }));
+
         this.app.get("/api/auth/session", this.errorHandler(async (req: Request, res: Response) => {
 
             const session_id = req.cookies.session_id;
@@ -143,7 +158,7 @@ export class StatelessController {
                 return;
             }
 
-            const payload = await this.app_layer.authenticateBySessionID(session_id);
+            const payload = await this.app_layer.authenticateBySessionID(session_id as string);
             res.status(200).json({
                 success: payload.success,
                 data: payload.data,
@@ -159,7 +174,7 @@ export class StatelessController {
                 return;
             }
 
-            const payload = await this.app_layer.logoutUser(session_id);
+            const payload = await this.app_layer.logoutUser(session_id as string);
 
             res.clearCookie("session_id");
             res.status(200).json(payload);

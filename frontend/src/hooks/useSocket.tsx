@@ -19,11 +19,14 @@ import { IContactState } from '../interfaces/UI/IContactState';
 
 const SocketContext = createContext<ISocketContext | undefined>(undefined);
 
+// this is the main hook that handles all websocket communication for the frontend
+// it keeps track of rooms, contacts, messages, and notifications
 export const SocketProvider = ({ children, userState, setUserState, status, navigate, showToast }: { children: ReactNode, userState: IClientPublic, setUserState: React.Dispatch<React.SetStateAction<IClientPublic | null>>, status: "authorized" | "loading", navigate: NavigateFunction, showToast(msg: string): void }) => {
 
 
     const socketRef = useRef<Socket | null>(null);
 
+    // we use state to store things like notifications and message counts
     const [notifications, setNotifications] = useState<INotificationState>({
         [ENotificationType.CREATE_CONTACT]: {},
         [ENotificationType.RECEIVE_REQUEST]: {},
@@ -39,8 +42,10 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
     const [onlineStatus, setOnlineStatus] = useState<"online" | "offline">("online");
     const online_status_ref = useRef<"online" | "offline">("online");
+    // this keeps track of all your friends and their status
     const [contacts, setContacts] = useState<Record<string, IContactState>>({});
 
+    // this list has all the chat rooms you are part of
     const [rooms, setRooms] = useState<IRoomPublic[]>([]);
     const rooms_ref = useRef<IRoomPublic[]>([]);
 
@@ -146,6 +151,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
         if (status !== "authorized")
             return;
 
+        // this part sets up the connection to the backend server
         if (!socketRef.current) {
             socketRef.current = io("http://localhost:3000", {
                 withCredentials: true,
@@ -474,13 +480,18 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                 }
             });
 
-            ws.on(IPayloadResponseType.ONDELETE_MESSAGE, (payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string }>) => {
-                const { msg_public_id, room_public_id } = payload.data!;
+            ws.on(IPayloadResponseType.ONDELETE_MESSAGE, (payload: IPayloadInterface<{ msg_public_id: string, room_public_id: string, total_strike?: number }>) => {
+                const { msg_public_id, room_public_id, total_strike } = payload.data!;
+
+                // Show strike notification to the sender
+                if (total_strike !== undefined && total_strike > 0) {
+                    showToast(`⚠️ Your message was removed by AI moderation. Strike ${total_strike}/3`);
+                }
 
                 setMessages((prev) =>
                     prev.map((msg) =>
                         msg.public_id === msg_public_id
-                            ? { ...msg, is_del: true, content: IPayloadResponseType.MESSAGE_DELELTED }
+                            ? { ...msg, is_del: true, content: IPayloadResponseType.MESSAGE_DELETED }
                             : msg
                     )
                 );
@@ -495,12 +506,22 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                             ...curr_room,
                             messages: curr_room.messages.map((msg) =>
                                 msg.public_id === msg_public_id
-                                    ? { ...msg, is_del: true, content: IPayloadResponseType.MESSAGE_DELELTED }
+                                    ? { ...msg, is_del: true, content: IPayloadResponseType.MESSAGE_DELETED }
                                     : msg
                             ),
                         },
                     };
                 });
+
+                // Update room's last_message_payload — if the deleted msg was the last one, clear it
+                setRooms((prev) =>
+                    prev.map((room) => {
+                        if (room.public_id === room_public_id && room.last_message_payload?.public_id === msg_public_id) {
+                            return { ...room, last_message_payload: null };
+                        }
+                        return room;
+                    })
+                );
 
             });
 
@@ -508,10 +529,6 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                 const enc_message = payload.data!.enc_message;
                 const roomID = enc_message.room_public_id;
                 const isActiveRoom = activeRoomRef.current?.public_id === roomID;
-
-                console.log(activeRoomRef.current!.public_id);
-                console.log(roomID);
-
 
                 ws.emit("message", {
                     type: IPayloadRequestType.MESSAGE_RECEIVED,
@@ -610,6 +627,89 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                     return message;
                 }));
 
+            });
+
+            ws.on(IPayloadResponseType.ONMESSAGE_READ, (payload: IPayloadInterface<{ room_public_id: string }>) => {
+                setRoomCache((prev) => {
+                    const curr_room = prev[payload.data!.room_public_id];
+
+                    if (!curr_room)
+                        return prev;
+
+                    return {
+                        ...prev,
+                        [payload.data!.room_public_id]: {
+                            ...curr_room,
+                            messages: curr_room.messages.map((msg) => ({ ...msg, is_read: true })),
+                        },
+                    };
+                });
+
+                if (payload.data!.room_public_id !== activeRoomRef.current?.public_id)
+                    return;
+
+                setMessages((prev) => prev.map(message => ({ ...message, is_read: true })));
+            });
+
+            ws.on(IPayloadResponseType.ONUPDATE_NICKNAME, (payload: IPayloadInterface<{ username?: string, nickname: string }>) => {
+                const updatedUsername = payload.data!.username;
+                if (updatedUsername && updatedUsername !== userState?.username) {
+                    // Update contact nickname
+                    setContacts(prev => {
+                        const newContacts = { ...prev };
+                        const contactKey = Object.keys(newContacts).find(k => newContacts[k].client.username === updatedUsername);
+                        if (contactKey) {
+                            newContacts[contactKey] = {
+                                ...newContacts[contactKey],
+                                client: { ...newContacts[contactKey].client, nickname: payload.data!.nickname }
+                            };
+                        }
+                        return newContacts;
+                    });
+                    // Update room name in sidebar (room_subname holds the contact's username)
+                    setRooms(prev => prev.map(room =>
+                        room.room_subname === updatedUsername
+                            ? { ...room, room_name: payload.data!.nickname }
+                            : room
+                    ));
+                    // Update active room if it's the one currently open
+                    setActiveRoomSetup(prev => (prev && prev.room_subname === updatedUsername) 
+                        ? { ...prev, room_name: payload.data!.nickname } 
+                        : prev
+                    );
+                } else {
+                    setUserState(prev => prev ? { ...prev, nickname: payload.data!.nickname } : prev);
+                }
+            });
+
+            ws.on(IPayloadResponseType.ONUPDATE_AVATAR, (payload: IPayloadInterface<{ username?: string, avatar: string }>) => {
+                const updatedUsername = payload.data!.username;
+                if (updatedUsername && updatedUsername !== userState?.username) {
+                    setContacts(prev => {
+                        const newContacts = { ...prev };
+                        const contactKey = Object.keys(newContacts).find(k => newContacts[k].client.username === updatedUsername);
+                        if (contactKey) {
+                            newContacts[contactKey] = {
+                                ...newContacts[contactKey],
+                                client: { ...newContacts[contactKey].client, avatar: payload.data!.avatar }
+                            };
+                        }
+                        return newContacts;
+                    });
+                    // Update room data in sidebar
+                    setRooms(prev => prev.map(room =>
+                        room.room_subname === updatedUsername
+                            ? { ...room, last_message_payload: room.last_message_payload ? { ...room.last_message_payload, avatar: payload.data!.avatar } : room.last_message_payload }
+                            : room
+                    ));
+                    // Update active room if it's the one currently open
+                    setActiveRoomSetup(prev => (prev && prev.room_subname === updatedUsername) 
+                        ? { ...prev } // This triggers a re-render which pulls fresh data from contacts
+                        : prev
+                    );
+                } else {
+                    setUserState(prev => prev ? { ...prev, avatar: payload.data!.avatar } : prev);
+                }
             });
 
             ws.on(IPayloadResponseType.ONSEND_REQUEST, (payload: IPayloadInterface<IRequestPublic>) => {
@@ -805,6 +905,22 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
             });
 
+            ws.on("onclose", (e) => {
+
+                if (e.code === 1000)
+                    return;
+
+                console.log(e.reason);
+                showToast("reconnecting....");
+
+                const recursive_conn = () => {
+                    ws.connect();
+                };
+
+                setTimeout(recursive_conn, 1000 * 10);
+                ws.connect();
+            })
+
             ws.on("disconnect", () => {
                 console.log("client has disconnected");
             });
@@ -870,6 +986,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
         setNotifications,
         onlineStatus,
         contacts,
+        showToast,
     };
 
     return (

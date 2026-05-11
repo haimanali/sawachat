@@ -5,6 +5,7 @@ import { IRepositoryLayerResponse, IServiceLayerResponse } from "../../responseF
 import { DBConn } from "../DBConn.js";
 import { IMessageRepository } from "./IMessageRepository.js";
 
+// this repository handles all the sql queries for chat messages
 export class MessageRepository implements IMessageRepository {
 
     public static getInstance(db_conn: DBConn): MessageRepository {
@@ -21,6 +22,7 @@ export class MessageRepository implements IMessageRepository {
         this.db_conn = db_conn;
     }
 
+    // helper to get a single message from the database
     private async getMessageByID(msg_id: number): Promise<IMessage> {
         const sql = "select message_id, BIN_TO_UUID(public_id) as public_id, TO_BASE64(iv) as iv, room_id, user_id, TO_BASE64(content) as content, created_at, is_delivered, is_read  from Message where message_id = ?";
         const result = await this.db_conn.executeQuery<IMessage>(sql, [msg_id]);
@@ -29,7 +31,8 @@ export class MessageRepository implements IMessageRepository {
         return room;
     }
 
-    //overrides
+
+    // saves a new encrypted message record
     public async insertMessageRecord(public_id: string, iv: string, content: string, s_user_id: number, room_id: number): Promise<IRepositoryLayerResponse<IMessage>> {
         const sql = "insert into Message (public_id, iv, room_id, user_id, content) values (UUID_TO_BIN(?), FROM_BASE64(?), ?, ?, FROM_BASE64(?))";
         const result = await this.db_conn.executeUpdate(sql, [public_id, iv, room_id, s_user_id, content]);
@@ -46,19 +49,45 @@ export class MessageRepository implements IMessageRepository {
         };
     }
 
-    public async updateMessageIsDel(msg_public_id: string): Promise<IRepositoryLayerResponse> {
+    // marks a message as deleted (usually when the ai finds it toxic)
+    public async updateMessageIsDel(msg_public_id: string): Promise<IRepositoryLayerResponse<IMessage>> {
         const sql = "update Message set is_del = true where public_id = UUID_TO_BIN(?)";
         const result = await this.db_conn.executeUpdate(sql, [msg_public_id]);
 
         if (result.affectedRows <= 0)
             throw Error("something went wrong");
 
+        const message = await this.getMessageByPublicID(msg_public_id);
+
         return {
-            success : true,
-            log_message : "message was tagged deleted",
+            success: true,
+            data: message,
+            log_message: "message was tagged deleted",
         };
     }
 
+    public async getMessageByPublicID(public_id: string): Promise<IMessage> {
+        const sql = "select message_id, BIN_TO_UUID(public_id) as public_id, TO_BASE64(iv) as iv, room_id, user_id, TO_BASE64(content) as content, created_at, is_delivered, is_read, is_del from Message where public_id = UUID_TO_BIN(?)";
+        const result = await this.db_conn.executeQuery<IMessage>(sql, [public_id]);
+
+        if (result.count <= 0)
+            throw Error("message not found");
+
+        return result.data[0];
+    }
+
+    // marks messages as read for a specific user in a room
+    public async updateMessagesReadInRoom(user_id: number, room_id: number): Promise<IRepositoryLayerResponse> {
+        const sql = "UPDATE Message SET is_read = true WHERE room_id = ? AND user_id != ? AND is_read = false";
+        const result = await this.db_conn.executeUpdate(sql, [room_id, user_id]);
+        
+        return {
+            success: true,
+            log_message: "messages marked as read",
+        };
+    }
+
+    // marks all messages as delivered when a user comes back online
     public async updateAllMessageDelivered(user_id: number): Promise<IRepositoryLayerResponse<IMessage[]>> {
 
         const sel_sql = `select m.message_id, BIN_TO_UUID(m.public_id) as public_id, TO_BASE64(m.iv) as iv, BIN_TO_UUID(cr.public_id) as room_public_id, m.room_id, m.user_id, TO_BASE64(m.content) as content, m.created_at, m.is_delivered, m.is_read, m.is_del
@@ -68,7 +97,7 @@ export class MessageRepository implements IMessageRepository {
         const result = await this.db_conn.executeQuery<IMessageRecord>(sel_sql, [user_id, user_id]);
 
         if (result.data.length > 0) {
-            const upt_sql = "update Message set is_delivered = true where is_delivered = false and user_id != ? and room_id = ( select room_id from RoomMembers where user_id = ?)";
+            const upt_sql = "update Message set is_delivered = true where is_delivered = false and user_id != ? and room_id IN ( select room_id from RoomMembers where user_id = ?)";
             const upt_result = await this.db_conn.executeUpdate(upt_sql, [user_id, user_id]);
         }
 
