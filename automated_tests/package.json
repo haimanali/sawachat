@@ -1,0 +1,19 @@
+{
+  "name": "sawachat-automated-tests",
+  "version": "1.0.0",
+  "description": "Automated test scripts for GP2",
+  "type": "module",
+  "scripts": {
+    "test:unit": "node unit_tests.js",
+    "test:integration": "node integration_tests.js",
+    "test:latency": "node latency_test.js",
+    "test:concurrency": "node --max-old-space-size=8192 concurrency_test.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "mysql2": "^3.22.3",
+    "socket.io-client": "^4.8.3",
+    "uuid": "^14.0.0",
+    "zod": "^4.4.3"
+  }
+}
