@@ -97,7 +97,7 @@ export class SessionService implements ISessionService {
         return await this.repository.Iclient_repo.updateAvatar(user_id, avatar);
     }
 
-    public performValidateUsernamePrompt(username: string): IServiceLayerResponse{
+    public performValidateUsernamePrompt(username: string): IServiceLayerResponse {
         const user = username.trim();
 
         if (!/^[A-Za-z0-9_]{3,16}$/.test(user)) {
@@ -148,13 +148,13 @@ export class SessionService implements ISessionService {
     public performtValidateRequestPrompt(prompt: string): IServiceLayerResponse {
         if (prompt.length === 0)
             return {
-                success : false,
-                log_message : "the field is empty",
+                success: false,
+                log_message: "the field is empty",
             };
-        
+
         return {
-            success : true,
-            log_message : "request prompt is valid",
+            success: true,
+            log_message: "request prompt is valid",
         };
     }
 
@@ -162,13 +162,35 @@ export class SessionService implements ISessionService {
     public performValidateMessagePrompt(prompt: string): IServiceLayerResponse {
         if (prompt.length === 0)
             return {
-                success : false,
-                log_message : "the field is empty",
+                success: false,
+                log_message: "the field is empty",
             };
-        
+
         return {
-            success : true,
-            log_message : "message prompt is valid",
+            success: true,
+            log_message: "message prompt is valid",
         };
+    }
+
+    public peformValidateAvatarPrompt(base64String: string): IServiceLayerResponse {
+        if (!base64String) {
+            return { success: false, log_message: "No image data provided" };
+        }
+
+
+        const typeMatch = base64String.match(/^data:image\/(png|jpeg|jpg);base64,/);
+        if (!typeMatch) {
+            return { success: false, log_message: "Invalid file type. Only PNG and JPEG are allowed." };
+        }
+
+        const stringLength = base64String.split(',')[1].length;
+        const sizeInBytes = (stringLength * 3) / 4;
+        const oneMegabyte = 1024 * 1024;
+
+        if (sizeInBytes > oneMegabyte) {
+            return { success: false, log_message: "File is too large. Max size is 1MB." };
+        }
+
+        return { success: true, log_message: "Avatar validated successfully" };
     }
 }

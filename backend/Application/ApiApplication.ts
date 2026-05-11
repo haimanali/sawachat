@@ -134,7 +134,7 @@ export class ApiApplication implements IApiApplication {
             };
 
         const valid_nickname = this.services.Isession_service.performValidateNicknamePrompt(req_body.nickname);
-        if (!valid_username.success)
+        if (!valid_nickname.success)
             return {
                 success: valid_nickname.success,
                 log_message: valid_nickname.log_message,
