@@ -19,6 +19,5 @@ export interface ISessionService
     performValidatePasswordPrompt(password : string) : IServiceLayerResponse;
     performtValidateRequestPrompt(prompt : string) : IServiceLayerResponse;
     performValidateMessagePrompt( prompt : string ) : IServiceLayerResponse;
-    peformValidateAvatarPrompt (prompt : string ) : IServiceLayerResponse; 
-
+    peformValidateAvatarPrompt (prompt : string ) : IServiceLayerResponse;
 }

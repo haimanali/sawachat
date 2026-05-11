@@ -172,7 +172,7 @@ export class SessionService implements ISessionService {
         };
     }
 
-    public peformValidateAvatarPrompt(base64String: string): IServiceLayerResponse {
+        public peformValidateAvatarPrompt(base64String: string): IServiceLayerResponse {
         if (!base64String) {
             return { success: false, log_message: "No image data provided" };
         }

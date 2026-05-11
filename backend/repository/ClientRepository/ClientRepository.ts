@@ -142,7 +142,7 @@ export class ClientRepository implements IClientRepository
     }
 
     public async validateClient(username: string, password: string): Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select user_id, username, nickname, hash_pass, is_ban, avatar from Client where username = ? and is_ban = false";
+        const sql = "select user_id, username, nickname, hash_pass, is_ban, TO_BASE64(avatar) from Client where username = ? and is_ban = false";
 
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
         
@@ -153,6 +153,8 @@ export class ClientRepository implements IClientRepository
             };
 
         const [client_record] = result.data;
+
+        console.log(client_record);
 
         const is_match = await this.validatePassword(client_record.hash_pass, password);
         
