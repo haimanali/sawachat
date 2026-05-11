@@ -90,7 +90,7 @@ export class ApiApplication implements IApiApplication {
                 log_message: valid_username.log_message,
             };
 
-        const valid_password = this.services.Isession_service.performValidateUsernamePrompt(req_body.password);
+        const valid_password = this.services.Isession_service.performValidatePasswordPrompt(req_body.password);
         if (!valid_password.success)
             return {
                 success: valid_password.success,
@@ -140,7 +140,7 @@ export class ApiApplication implements IApiApplication {
                 log_message: valid_nickname.log_message,
             };
 
-        const valid_password = this.services.Isession_service.performValidateUsernamePrompt(req_body.password);
+        const valid_password = this.services.Isession_service.performValidatePasswordPrompt(req_body.password);
         if (!valid_password.success)
             return {
                 success: valid_password.success,
