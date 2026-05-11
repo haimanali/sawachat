@@ -194,6 +194,10 @@ export class ApiApplication implements IApiApplication {
     }
 
     public async updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse> {
+        const valid_avatar = this.services.Isession_service.peformValidateAvatarPrompt(avatar);
+        if (!valid_avatar.success)
+            return valid_avatar;
+        
         return await this.services.Isession_service.performUpdateAvatar(user_id, avatar);
     }
 
