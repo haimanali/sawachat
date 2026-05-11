@@ -171,4 +171,26 @@ export class SessionService implements ISessionService {
             log_message : "message prompt is valid",
         };
     }
+
+        public peformValidateAvatarPrompt(base64String: string): IServiceLayerResponse {
+        if (!base64String) {
+            return { success: false, log_message: "No image data provided" };
+        }
+
+
+        const typeMatch = base64String.match(/^data:image\/(png|jpeg|jpg);base64,/);
+        if (!typeMatch) {
+            return { success: false, log_message: "Invalid file type. Only PNG and JPEG are allowed." };
+        }
+
+        const stringLength = base64String.split(',')[1].length;
+        const sizeInBytes = (stringLength * 3) / 4;
+        const oneMegabyte = 1024 * 1024;
+
+        if (sizeInBytes > oneMegabyte) {
+            return { success: false, log_message: "File is too large. Max size is 1MB." };
+        }
+
+        return { success: true, log_message: "Avatar validated successfully" };
+    }
 }
