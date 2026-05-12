@@ -47,7 +47,7 @@ export default function AddContactPOPUP() {
                         </div>
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "flex-end", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center" }}>
                         <p className={`message-error ${contactRequestError ? "active" : ""}`} aria-hidden={!contactRequestError}>{contactRequestError}</p>
                         <button type="submit" className="btn-primary" style={{ padding: "10px 24px" }}>
                             <span>{t('send_request')}</span>

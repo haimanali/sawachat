@@ -721,7 +721,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
                     setTimeout(() => {
                         setContactRequestError("");
-                    }, 1000);
+                    }, 2000);
 
                     return;
                 }
