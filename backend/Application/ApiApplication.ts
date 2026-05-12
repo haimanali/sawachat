@@ -45,6 +45,7 @@ export class ApiApplication implements IApiApplication {
                 username: result.data!.username,
                 nickname: result.data!.nickname,
                 avatar: result.data!.avatar,
+                avatar_type : result.data!.avatar_type,
             },
             log_message: result.log_message,
 
@@ -66,6 +67,7 @@ export class ApiApplication implements IApiApplication {
                 username: result.data!.username,
                 nickname: result.data!.nickname,
                 avatar: result.data!.avatar,
+                avatar_type : result.data!.avatar_type,
             },
             log_message: result.log_message,
         };
@@ -109,6 +111,7 @@ export class ApiApplication implements IApiApplication {
             username: l_result.data!.username,
             nickname: l_result.data!.nickname,
             avatar: l_result.data!.avatar,
+            avatar_type : l_result.data!.avatar_type,
         };
 
         return {
@@ -163,6 +166,7 @@ export class ApiApplication implements IApiApplication {
             username: l_result.data!.username,
             nickname: l_result.data!.nickname,
             avatar: l_result.data!.avatar,
+            avatar_type : l_result.data!.avatar_type,
         };
 
         return {
@@ -497,8 +501,8 @@ export class ApiApplication implements IApiApplication {
             const contactrm_result = await this.services.Icontact_service.performRemoveContact(user1.user_id, user2.user_id);
         }
 
-        const toPublic = ({ username, nickname, avatar }: IClient): IClientPublic => {
-            return { username, nickname, avatar };
+        const toPublic = ({ username, nickname, avatar, avatar_type }: IClient): IClientPublic => {
+            return { username, nickname, avatar, avatar_type };
         };
 
         return {

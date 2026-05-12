@@ -130,6 +130,7 @@ export default function SideBar({ sidebarOpen, onCloseSidebar }: { sidebarOpen?:
                         mode={onlineStatus}
                         nickname={userState?.nickname || "User"}
                         image={userState?.avatar}
+                        type={userState?.avatar_type}
                     />
 
                     <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>

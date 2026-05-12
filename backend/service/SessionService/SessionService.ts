@@ -71,8 +71,8 @@ export class SessionService implements ISessionService {
     public async performVerifyUsername(username: string): Promise<IServiceLayerResponse<IClient>> {
         const cl_result = await this.repository.Iclient_repo.checkClientExist(username);
 
-        if (!cl_result.success) {
-            return { success: false, log_message: "user doesn't exists" };
+        if (!cl_result.success || cl_result.data?.is_ban) {
+            return { success: false, log_message: "either this user doesn't exists or has been suspended" };
         }
 
         return {
@@ -94,7 +94,10 @@ export class SessionService implements ISessionService {
 
     // updates the user's avatar image
     public async performUpdateAvatar(user_id: number, avatar: string): Promise<IServiceLayerResponse> {
-        return await this.repository.Iclient_repo.updateAvatar(user_id, avatar);
+        const type = avatar.split(';')[0].split(':')[1];
+        const cleanBase64 = avatar.includes(',') ? avatar.split(',')[1] : avatar;
+
+        return await this.repository.Iclient_repo.updateAvatar(user_id, cleanBase64, type);
     }
 
     public performValidateUsernamePrompt(username: string): IServiceLayerResponse {

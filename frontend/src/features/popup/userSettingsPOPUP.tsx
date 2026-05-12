@@ -87,7 +87,7 @@ export default function UserSettingsPOPUP() {
                             style={{ border: "none", background: "transparent", cursor: "pointer", position: "relative", borderRadius: "50%" }}>
                             <div className="chat-avatar" id="settings-avatar" style={{ width: "56px", height: "56px", fontSize: "1.5rem" }}>{
                                 (<>
-                                    <UserAvatar size="100%" nickname={userState.nickname} image={userState.avatar} />
+                                    <UserAvatar size="100%" nickname={userState.nickname} image={userState.avatar} type={userState.avatar_type}/>
                                 </>)
                             }</div>
                             <div style={{ position: "absolute", bottom: 0, right: "-4px", background: "var(--surface)", borderRadius: "50%", padding: "4px", boxShadow: "var(--shadow)" }}>

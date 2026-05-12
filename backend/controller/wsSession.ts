@@ -307,6 +307,7 @@ export class wsSession {
                                 username: client.username,
                                 nickname: client.nickname,
                                 avatar : client.avatar,
+                                avatar_type : client.avatar_type,
                             };
                         };
 

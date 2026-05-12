@@ -118,7 +118,7 @@ export default function ChatRoomTab() {
                                     }}
                                 >
                                     {/* 1. Avatar */}
-                                    <UserAvatar mode={contacts[room.room_subname]?.onlineState || 'offline'} nickname={contacts[room.room_subname]?.client.nickname || room.room_name} image={contacts[room.room_subname]?.client.avatar} />
+                                    <UserAvatar mode={contacts[room.room_subname]?.onlineState || 'offline'} nickname={contacts[room.room_subname]?.client.nickname || room.room_name} image={contacts[room.room_subname]?.client.avatar} type={contacts[room.room_subname]?.client.avatar_type} />
 
                                     {/* 2. Middle: Room Details & Last Message */}
                                     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>

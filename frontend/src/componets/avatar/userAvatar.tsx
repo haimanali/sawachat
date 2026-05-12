@@ -4,14 +4,15 @@ import { UserAvatarProps } from "../../interfaces/UI/props/IUserAvatarProps";
 // this component shows the user's profile picture
 // if they don't have one, it shows the first letter of their nickname instead
 export default function UserAvatar({
-    image, // the base64 string or url for the picture
+    image,
+    type, // the base64 string or url for the picture
     mode, // online or offline status
     nickname = "?", 
     size = "44px"
 }: UserAvatarProps) {
 
     const imageSrc = image && typeof image === 'string' && !image.startsWith('data:') 
-        ? `data:image/jpeg;base64,${image}` 
+        ? `data:${type};base64,${image}` 
         : image;
 
     return (

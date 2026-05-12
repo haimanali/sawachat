@@ -197,7 +197,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                                     <line x1="3" y1="18" x2="21" y2="18"/>
                                 </svg>
                             </button>
-                            <UserAvatar mode={contacts[activeRoomSetup.room_subname]?.onlineState || "offline"} nickname={contacts[activeRoomSetup.room_subname]?.client.nickname || "User"} image={contacts[activeRoomSetup.room_subname]?.client.avatar} />
+                            <UserAvatar mode={contacts[activeRoomSetup.room_subname]?.onlineState || "offline"} nickname={contacts[activeRoomSetup.room_subname]?.client.nickname || "User"} image={contacts[activeRoomSetup.room_subname]?.client.avatar} type={contacts[activeRoomSetup.room_subname]?.client.avatar_type} />
                             <div className="chat-meta">
                                 <h2 className="chat-name" id="active-chat-name">{activeRoomSetup.room_name}</h2>
                                 <p className="chat-preview" style={{ color: "var(--primary)" }}>Encryption at Rest (EaR) Channel</p>
@@ -461,6 +461,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                                     size="100%" 
                                     nickname={contacts[activeRoomSetup.room_subname].client.nickname} 
                                     image={contacts[activeRoomSetup.room_subname].client.avatar}
+                                    type={contacts[activeRoomSetup.room_subname].client.avatar_type}
                                     mode={contacts[activeRoomSetup.room_subname].onlineState}
                                 />
                             </div>

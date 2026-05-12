@@ -72,7 +72,7 @@ export class ClientRepository implements IClientRepository
     // this gets the user info using their session id from the cookie
     public async getClientBySessionID(session_id: string): Promise<IRepositoryLayerResponse<IClient>> {
         const sql = 
-        "select u.user_id, u.username, u.nickname, u.hash_pass, TO_BASE64(u.avatar) AS avatar from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW() and u.is_ban = false";
+        "select u.user_id, u.username, u.nickname, u.hash_pass, TO_BASE64(u.avatar) AS avatar, avatar_type from Client as u join Session as s on u.user_id = s.user_id where s.session_id = UUID_TO_BIN(?) and s.expire > NOW() and u.is_ban = false";
         
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [session_id]);
 
@@ -91,6 +91,7 @@ export class ClientRepository implements IClientRepository
                 username : client_record.username,
                 nickname: client_record.nickname,
                 avatar: client_record.avatar,
+                avatar_type : client_record.avatar_type,
             },
             log_message : "got client by session_id"
         };
@@ -142,7 +143,7 @@ export class ClientRepository implements IClientRepository
     }
 
     public async validateClient(username: string, password: string): Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select user_id, username, nickname, hash_pass, is_ban, TO_BASE64(avatar) from Client where username = ? and is_ban = false";
+        const sql = "select user_id, username, nickname, hash_pass, is_ban, TO_BASE64(avatar), avatar_type from Client where username = ? and is_ban = false";
 
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
         
@@ -167,6 +168,7 @@ export class ClientRepository implements IClientRepository
                 username : client_record.username, 
                 nickname : client_record.nickname,
                 avatar: client_record.avatar,
+                avatar_type : client_record.avatar_type,
             }, 
             log_message : "username is valid"
         } 
@@ -179,7 +181,7 @@ export class ClientRepository implements IClientRepository
 
     public async checkClientExist(username : string) : Promise<IRepositoryLayerResponse<IClient>>
     {
-        const sql = "select user_id, username, nickname, avatar from Client where username = ?";
+        const sql = "select user_id, username, nickname, TO_BASE64(avatar) as avatar, avatar_type, is_ban from Client where username = ?";
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
 
         if (result.count <= 0)
@@ -195,6 +197,8 @@ export class ClientRepository implements IClientRepository
             username : data.username,
             nickname : data.nickname,
             avatar: data.avatar,
+            avatar_type : data.avatar_type,
+            is_ban : data.is_ban,
         };
 
         return {
@@ -230,10 +234,9 @@ export class ClientRepository implements IClientRepository
         };
     }
 
-    public async updateAvatar(user_id: number, avatar: string): Promise<IRepositoryLayerResponse> {
-        const cleanBase64 = avatar.includes(',') ? avatar.split(',')[1] : avatar;
-        const sql = "update Client set avatar = FROM_BASE64(?) where user_id = ?";
-        const result = await this.db_conn.executeUpdate(sql, [cleanBase64, user_id]);
+    public async updateAvatar(user_id: number, avatar: string, type : string): Promise<IRepositoryLayerResponse> {
+        const sql = "update Client set avatar = FROM_BASE64(?), avatar_type = ? where user_id = ?";
+        const result = await this.db_conn.executeUpdate(sql, [avatar, type, user_id]);
 
         if (result.affectedRows === 0)
             throw Error("something went wrong updating avatar.");
@@ -277,6 +280,7 @@ export class ClientRepository implements IClientRepository
             username : data.username,
             nickname : data.nickname, 
             avatar: data.avatar,
+            avatar_type : data.avatar_type,
         };
 
         return {
