@@ -244,7 +244,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const checkSession = async () => {
 
-            const ip = "http://localhost:3000/api/auth/session";
+            const ip = "/api/auth/session";
             const response = await apiCall(ip, 'GET');
 
             if (response.success) {

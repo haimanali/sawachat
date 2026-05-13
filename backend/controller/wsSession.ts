@@ -77,7 +77,7 @@ export class wsSession {
     constructor(soc: Socket, stateful_controller: StatefulController, Iapp_layer: IApiApplication, client: IClient) {
         this.soc = soc;
         this.client = client;
-        this.is_online = false;
+        this.is_online = true;
 
         this.stateful_controller = stateful_controller;
         this.app_layer = Iapp_layer;
@@ -314,7 +314,7 @@ export class wsSession {
                         //broadcast room to clients
                         this.write(IPayloadResponseType.ONCREATE_CONTACT, this.stateful_controller.preparePayload({ success: result.success, data: { room: result.data!.r_room, contact: toPublic(result.internal!.s_client), onlineState: s_client_online ? "online" : "offline" }, log_message: result.log_message }));
                         this.stateful_controller.broadcastRoom(IPayloadResponseType.ONCREATE_CONTACT, result.internal!.s_client.user_id, this, this.stateful_controller.preparePayload({ success: result.success, data: { room: result.data!.s_room, contact: toPublic(this.client), onlineState: this.is_online ? "online" : "offline" }, log_message: result.log_message }));
-
+                        console.log({ room: result.data!.s_room, contact: toPublic(this.client), onlineState: this.is_online ? "online" : "offline" });
                         const notificaiton = await this.app_layer.pushNotification(result.internal!.s_client.user_id, ENotificationType.CREATE_CONTACT, { type: ENotificationType.CREATE_CONTACT, room: result.data!.s_room });
                         if (notificaiton.success)
                             this.stateful_controller.broadcastNotificationToUser(IPayloadResponseType.ONTRIGGER_NOTIFICATION, result.internal!.s_client.user_id, this, this.stateful_controller.preparePayload(notificaiton));
@@ -366,6 +366,9 @@ export class wsSession {
                         // if they reached 3 strikes, we ban them right now
                         if (total_strike && total_strike >= IPayloadResponseType.MAX_STRIKE) {
                             this.is_banned = true;
+                            this.is_online = false;
+
+                            this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts...
                             this.write(IPayloadResponseType.ONBAN, this.stateful_controller.preparePayload({ success: true, log_message: "you have been permanently banned for toxic behaviour" }));
                         }
                     });
@@ -412,15 +415,19 @@ export class wsSession {
 
             case IPayloadRequestType.UPDATE_AVATAR:
                 {
-                    const new_avatar = data.payload.avatar;
-                    const r_result = await this.app_layer.updateAvatar(this.client.user_id, new_avatar);
+                    const avatar = data.payload.avatar;
+                    const r_result = await this.app_layer.updateAvatar(this.client.user_id, avatar);
                     if (r_result.success) {
-                        this.client.avatar = new_avatar;
+                        this.client.avatar = avatar;
                         const payload = this.stateful_controller.preparePayload({
                             success: true,
-                            data: { username: this.client.username, avatar: new_avatar },
+                            data: { username: this.client.username, avatar: r_result.data!.avatar, type : r_result.data!.type },
                             log_message: "Avatar updated"
                         });
+
+                        this.client.avatar = r_result.data!.avatar;
+                        this.client.avatar_type = r_result.data!.type;
+                        
                         this.write(IPayloadResponseType.ONUPDATE_AVATAR, payload);
                         this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONUPDATE_AVATAR, this.client.user_id, this, payload);
                     }

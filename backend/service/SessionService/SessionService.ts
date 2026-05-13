@@ -93,11 +93,8 @@ export class SessionService implements ISessionService {
     }
 
     // updates the user's avatar image
-    public async performUpdateAvatar(user_id: number, avatar: string): Promise<IServiceLayerResponse> {
-        const type = avatar.split(';')[0].split(':')[1];
-        const cleanBase64 = avatar.includes(',') ? avatar.split(',')[1] : avatar;
-
-        return await this.repository.Iclient_repo.updateAvatar(user_id, cleanBase64, type);
+    public async performUpdateAvatar(user_id: number, avatar: string, type : string): Promise<IServiceLayerResponse> {
+        return await this.repository.Iclient_repo.updateAvatar(user_id, avatar, type);
     }
 
     public performValidateUsernamePrompt(username: string): IServiceLayerResponse {
@@ -175,25 +172,46 @@ export class SessionService implements ISessionService {
         };
     }
 
-        public peformValidateAvatarPrompt(base64String: string): IServiceLayerResponse {
+    public peformValidateAvatarPrompt(base64String: string): IServiceLayerResponse<{ avatar: string, type: string }> {
+
         if (!base64String) {
-            return { success: false, log_message: "No image data provided" };
+            return {
+                success: false,
+                log_message: "No image data provided"
+            };
         }
 
+        const match = base64String.match(
+            /^data:(image\/(?:png|jpeg|jpg));base64,(.+)$/
+        );
 
-        const typeMatch = base64String.match(/^data:image\/(png|jpeg|jpg);base64,/);
-        if (!typeMatch) {
-            return { success: false, log_message: "Invalid file type. Only PNG and JPEG are allowed." };
+        if (!match) {
+            return {
+                success: false,
+                log_message: "Invalid file type. Only PNG and JPEG are allowed."
+            };
         }
 
-        const stringLength = base64String.split(',')[1].length;
-        const sizeInBytes = (stringLength * 3) / 4;
+        const type = match[1];
+        const avatar = match[2];
+
+        const sizeInBytes = (avatar.length * 3) / 4;
         const oneMegabyte = 1024 * 1024;
 
         if (sizeInBytes > oneMegabyte) {
-            return { success: false, log_message: "File is too large. Max size is 1MB." };
+            return {
+                success: false,
+                log_message: "File is too large. Max size is 1MB."
+            };
         }
 
-        return { success: true, log_message: "Avatar validated successfully" };
+        return {
+            success: true,
+            data: {
+                avatar,
+                type
+            },
+            log_message: "Avatar validated successfully"
+        };
     }
 }

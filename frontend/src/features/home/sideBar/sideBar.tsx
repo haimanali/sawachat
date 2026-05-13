@@ -13,7 +13,7 @@ import UserAvatar from "../../../componets/avatar/userAvatar";
 
 // this is the sidebar where you can see your chats and friend requests
 export default function SideBar({ sidebarOpen, onCloseSidebar }: { sidebarOpen?: boolean, onCloseSidebar?: () => void }) {
-    const { theme, setTheme, language, setLanguage, t } = useApp();
+    const { theme, setTheme, setUserState, language, setLanguage, t } = useApp();
 
     const {
         socket,
@@ -158,12 +158,13 @@ export default function SideBar({ sidebarOpen, onCloseSidebar }: { sidebarOpen?:
                 {/* Right Side: Logout Button */}
                 <div className="chat-item" id="logout-btn"
                     onClick={async () => {
-                        const response: IPayloadInterface = await apiCall("http://localhost:3000/api/auth/session/logout", "POST");
+                        const response: IPayloadInterface = await apiCall("/api/auth/session/logout", "POST");
 
                         if (response.success) {
                             if (socket) {
                                 socket.disconnect();
                             }
+                            setUserState(null);
                             navigate("/");
                         }
                     }}

@@ -27,7 +27,7 @@ export const ProtectedProvider = ({ children }: { children: ReactNode }) => {
 
         const verifySession = async () => {
 
-            const url = `http://localhost:3000/api/auth/session/check/${username}`;
+            const url = `/api/auth/session/check/${username}`;
             const response: IPayloadInterface<IClientPublic> = await apiCall(url, "GET");
 
             if (response.success) {

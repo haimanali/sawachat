@@ -33,7 +33,7 @@ export interface IApiApplication
     checkUsernameAvailability(username: string): Promise<IAppLayerResponse<boolean>>;
     logoutUser(session_id : string) : Promise<IAppLayerResponse>,
     updateNickname(user_id: number, nickname: string): Promise<IAppLayerResponse>;
-    updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse>;
+    updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse<{ avatar: string, type: string }>>;
     
     sendContactRequest(r_username : string, s_client : IClient) : Promise<IAppLayerResponse<IRequestPublic, IClient>>
     acceptContactRequest(username : string, request_verdict : boolean, r_client : IClient) : Promise<IAppLayerResponse<{r_room : IRoomPublic, s_room : IRoomPublic}, {s_client : IClient, room : IRoom}>>;

@@ -280,9 +280,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                                             return (
                                                 <div key={msg.public_id} className={`message-row ${isMe ? "own-message" : ""}`}>
                                                     {!isMe && (
-                                                        <div className="message-avatar">
-                                                            {msg.nickname.charAt(0).toUpperCase()}
-                                                        </div>
+                                                        <UserAvatar image={contacts[msg.username].client.avatar} type={contacts[msg.username].client.avatar_type} nickname={msg.nickname}/>
                                                     )}
                                                     <div className="message-content-wrapper">
                                                         <div className={`message-bubble ${msg.is_del ? 'deleted-message' : ''}`}>

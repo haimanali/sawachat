@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode, useState, use } from 'react';
+import React, { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { INotificaitonTypeCount, IPayloadInterface, IPayloadRequestType, IPayloadResponseType } from '../interfaces/payload/EPaylaod';
 import { initKey } from '../services/initKey'
@@ -88,6 +88,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
         const updateActivity = () => {
             if (!document.hasFocus())
                 return;
+
             last_activity.current = Date.now();
 
             if (!socketRef.current?.active && !socketRef.current?.connected) {
@@ -153,7 +154,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
         // this part sets up the connection to the backend server
         if (!socketRef.current) {
-            socketRef.current = io("http://localhost:3000", {
+            socketRef.current = io(window.location.origin, {
                 withCredentials: true,
                 autoConnect: true,
                 reconnectionAttempts: 3
@@ -682,7 +683,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                 }
             });
 
-            ws.on(IPayloadResponseType.ONUPDATE_AVATAR, (payload: IPayloadInterface<{ username?: string, avatar: string }>) => {
+            ws.on(IPayloadResponseType.ONUPDATE_AVATAR, (payload: IPayloadInterface<{ username?: string, avatar: string , type : string}>) => {
                 const updatedUsername = payload.data!.username;
                 if (updatedUsername && updatedUsername !== userState?.username) {
                     setContacts(prev => {
@@ -708,7 +709,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                         : prev
                     );
                 } else {
-                    setUserState(prev => prev ? { ...prev, avatar: payload.data!.avatar } : prev);
+                    setUserState(prev => prev ? { ...prev, avatar: payload.data!.avatar, avatar_type : payload.data!.type } : prev);
                 }
             });
 
@@ -751,7 +752,6 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
             ws.on(IPayloadResponseType.ONCREATE_CONTACT, (payload: IPayloadInterface<{ room: IRoomPublic, contact: IClientPublic, onlineState: "online" | "offline" }>) => {
                 const { contact, room, onlineState } = payload.data!;
-
                 setRooms(prev => {
                     if (prev.some(r => r.public_id === room.public_id))
                         return prev;
