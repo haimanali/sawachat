@@ -1,0 +1,40 @@
+{
+  "name": "sawachat-automated-tests",
+  "version": "1.0.0",
+  "description": "Automated test scripts for GP2",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run core.test.ts integration.test.ts socket.test.ts latency.test.ts",
+    "test:unit": "vitest run core.test.ts",
+    "test:integration": "vitest run integration.test.ts",
+    "test:socket": "vitest run socket.test.ts",
+    "test:implementation": "vitest run socket.test.ts",
+    "test:latency": "vitest run latency.test.ts",
+    "test:concurrency:vitest": "vitest run concurrency.test.ts",
+    "test:report": "vitest run core.test.ts integration.test.ts socket.test.ts latency.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/combined-junit.xml --reporter=json --outputFile.json=reports/combined-results.json --reporter=html --outputFile.html=reports/html/combined/index.html",
+    "test:unit:report": "vitest run core.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/unit-junit.xml --reporter=json --outputFile.json=reports/unit-results.json --reporter=html --outputFile.html=reports/html/unit/index.html",
+    "test:integration:report": "vitest run integration.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/integration-junit.xml --reporter=json --outputFile.json=reports/integration-results.json --reporter=html --outputFile.html=reports/html/integration/index.html",
+    "test:implementation:report": "vitest run socket.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/implementation-junit.xml --reporter=json --outputFile.json=reports/implementation-results.json --reporter=html --outputFile.html=reports/html/implementation/index.html",
+    "test:latency:report": "vitest run latency.test.ts --reporter=default --reporter=junit --outputFile.junit=reports/latency-junit.xml --reporter=json --outputFile.json=reports/latency-results.json --reporter=html --outputFile.html=reports/html/latency/index.html",
+    "test:concurrency:report": "vitest run concurrency.test.ts --reporter=default --reporter=junit --outputFile.junit=reports/concurrency-junit.xml --reporter=json --outputFile.json=reports/concurrency-results.json --reporter=html --outputFile.html=reports/html/concurrency/index.html",
+    "report:preview": "vite preview --outDir reports/html/combined",
+    "report:unit:preview": "vite preview --outDir reports/html/unit",
+    "report:integration:preview": "vite preview --outDir reports/html/integration",
+    "report:implementation:preview": "vite preview --outDir reports/html/implementation",
+    "report:latency:preview": "vite preview --outDir reports/html/latency",
+    "report:concurrency:preview": "vite preview --outDir reports/html/concurrency"
+  },
+  "dependencies": {
+    "axios": "^1.16.0",
+    "bcrypt": "^6.0.0",
+    "mysql2": "^3.22.3",
+    "socket.io-client": "^4.8.3",
+    "uuid": "^14.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/ui": "^4.1.6",
+    "vitest": "^4.1.6"
+  }
+}
