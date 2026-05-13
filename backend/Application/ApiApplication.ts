@@ -197,12 +197,17 @@ export class ApiApplication implements IApiApplication {
         return await this.services.Isession_service.performUpdateNickname(user_id, nickname);
     }
 
-    public async updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse> {
+    public async updateAvatar(user_id: number, avatar: string): Promise<IAppLayerResponse<{ avatar: string, type: string }>> {
         const valid_avatar = this.services.Isession_service.peformValidateAvatarPrompt(avatar);
         if (!valid_avatar.success)
             return valid_avatar;
         
-        return await this.services.Isession_service.performUpdateAvatar(user_id, avatar);
+        await this.services.Isession_service.performUpdateAvatar(user_id, valid_avatar.data!.avatar, valid_avatar.data!.type);
+        return {
+            success : true,
+            data : valid_avatar.data!,
+            log_message : valid_avatar.log_message,
+        };
     }
 
     public async sendContactRequest(r_username: string, s_client: IClient): Promise<IAppLayerResponse<IRequestPublic, IClient>> {

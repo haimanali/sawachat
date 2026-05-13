@@ -3,7 +3,7 @@ import { apiCall } from "../../../services/apiCaller"; // Ensure the path is cor
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../../hooks/useApp";
 
-const API_URL = "http://localhost:3000/api/login";
+const API_URL = "/api/login";
 
 // this is the login page where users enter their credentials
 export default function Login() {

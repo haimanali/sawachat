@@ -175,7 +175,7 @@ export class StatefulController {
 
         this.io_server = new Server(http_server, {
             cors: {
-                origin: "http://localhost:5173",
+                origin: ["http://localhost:5173", "https://seducing-snooper-handwash.ngrok-free.dev"],
                 credentials: true,
                 methods: ["POST", "GET", "PUT", "DELETE"],
             }

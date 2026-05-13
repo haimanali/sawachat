@@ -27,7 +27,7 @@ export class StatelessController {
 
         // we allow the frontend to talk to the backend using cors
         this.app.use(cors({
-            origin: "http://localhost:5173",
+            origin: ["http://localhost:5173", "https://seducing-snooper-handwash.ngrok-free.dev"],
             credentials: true,
             methods: ["POST", "GET", "PUT", "DELETE"],
         }));

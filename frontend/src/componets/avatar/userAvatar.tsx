@@ -1,19 +1,34 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { UserAvatarProps } from "../../interfaces/UI/props/IUserAvatarProps";
 
-// this component shows the user's profile picture
-// if they don't have one, it shows the first letter of their nickname instead
+/**
+ * UserAvatar Component
+ * Handles: Base64 images, loading states, and fallback to initials.
+ */
 export default function UserAvatar({
     image,
-    type, // the base64 string or url for the picture
-    mode, // online or offline status
-    nickname = "?", 
+    type,
+    mode,
+    nickname = "?",
     size = "44px"
 }: UserAvatarProps) {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
 
-    const imageSrc = image && typeof image === 'string' && !image.startsWith('data:') 
-        ? `data:${type};base64,${image}` 
-        : image;
+    const imageSrc = image ? `data:${type};base64,${image}` : undefined;
+
+    // Reset states and check cache whenever the image prop changes
+    useEffect(() => {
+        setIsLoaded(false);
+        setHasError(false);
+
+        // If image exists and is already in browser cache, it might be 'complete' 
+        // before the first render finishes. This prevents the "stuck" loading ring.
+        if (imgRef.current?.complete) {
+            setIsLoaded(true);
+        }
+    }, [image]);
 
     return (
         <div
@@ -22,23 +37,55 @@ export default function UserAvatar({
                 position: "relative",
                 width: size,
                 height: size,
-                flexShrink: 0, // Prevents flexbox from squishing your perfectly round avatar
+                flexShrink: 0,
             }}
         >
-            {/* --- 1. THE AVATAR (Image or Initial) --- */}
-            {image ? (
-                <img
-                    src={imageSrc}
-                    alt={`${nickname}'s avatar`}
+            {/* --- 1. LOADING STATE --- */}
+            {/* Show white ring if image exists but isn't ready yet */}
+            {image && !isLoaded && !hasError && (
+                <div
                     style={{
                         width: "100%",
                         height: "100%",
                         borderRadius: "50%",
-                        objectFit: "cover", // Ensures the image isn't stretched
-                        display: "block"
+                        backgroundColor: "var(--primary)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}
+                >
+                    <div style={{
+                        width: "40%",
+                        height: "40%",
+                        border: "2px solid #ffffff",
+                        borderRadius: "50%",
+                        opacity: 0.8
+                    }} />
+                </div>
+            )}
+
+            {/* --- 2. THE IMAGE --- */}
+            {image && !hasError && (
+                <img
+                    ref={imgRef}
+                    src={imageSrc}
+                    alt={`${nickname}'s avatar`}
+                    onLoad={() => setIsLoaded(true)}
+                    onError={() => setHasError(true)}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        // Keep the img tag in DOM for loading, but hide visually until ready
+                        display: isLoaded ? "block" : "none" 
                     }}
                 />
-            ) : (
+            )}
+
+            {/* --- 3. INITIALS FALLBACK --- */}
+            {/* Show if: there is no image OR the image failed to load (onError) */}
+            {(!image || hasError) && (
                 <div
                     style={{
                         width: "100%",
@@ -49,29 +96,27 @@ export default function UserAvatar({
                         alignItems: "center",
                         justifyContent: "center",
                         color: "white",
-                        // Dynamically scale font size based on the size prop
                         fontSize: `calc(${typeof size === "number" ? size + "px" : size} * 0.45)`,
                         fontWeight: "bold"
                     }}
                 >
-                    { nickname.charAt(0).toUpperCase() }
+                    {nickname.charAt(0).toUpperCase()}
                 </div>
             )}
 
-            {/* --- 2. THE STATUS DOT --- */}
+            {/* --- 4. THE STATUS DOT --- */}
             {mode && (
                 <span
                     style={{
                         position: "absolute",
                         bottom: "0",
                         right: "0",
-                        width: "28%",  // Scales perfectly with whatever size you pass
+                        width: "28%",
                         height: "28%",
                         backgroundColor: mode === "online" ? "var(--online)" : "var(--offline)",
                         borderRadius: "50%",
-                        // Uses your app's background color to create the cutout effect
-                        border: "2px solid var(--bg-main, #ffffff)", 
-                        boxSizing: "content-box" // Ensures the border grows outward, not inward
+                        border: "2px solid var(--bg-main, #ffffff)",
+                        boxSizing: "content-box"
                     }}
                 />
             )}

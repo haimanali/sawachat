@@ -12,12 +12,12 @@ export interface ISessionService
 
     performLogOutSession(session_id : string) : Promise<IServiceLayerResponse>;
     performUpdateNickname(user_id: number, nickname: string): Promise<IServiceLayerResponse>;
-    performUpdateAvatar(user_id: number, avatar: string): Promise<IServiceLayerResponse>;
+    performUpdateAvatar(user_id: number, avatar: string, type : string): Promise<IServiceLayerResponse>;
 
     performValidateUsernamePrompt(username : string) : IServiceLayerResponse;
     performValidateNicknamePrompt(nickname : string) : IServiceLayerResponse;
     performValidatePasswordPrompt(password : string) : IServiceLayerResponse;
     performtValidateRequestPrompt(prompt : string) : IServiceLayerResponse;
     performValidateMessagePrompt( prompt : string ) : IServiceLayerResponse;
-    peformValidateAvatarPrompt (prompt : string ) : IServiceLayerResponse;
+    peformValidateAvatarPrompt (prompt : string ) : IServiceLayerResponse<{ avatar: string, type: string }>;
 }

@@ -3,7 +3,7 @@ import { apiCall } from "../../../services/apiCaller"; // Ensure the path is cor
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../../hooks/useApp";
 
-const API_URL = "http://localhost:3000/api/signup";
+const API_URL = "/api/signup";
 
 // this page handles the registration for new users
 // it uses a multi-step form to make it easier to fill out
@@ -71,7 +71,7 @@ export default function Signup() {
     
     setIsCheckingUsername(true);
     try {
-      const result = await apiCall(`http://localhost:3000/api/auth/username/check/${user}`, "GET");
+      const result = await apiCall(`/api/auth/username/check/${user}`, "GET");
       if (result.success) {
         setUsernameAvailable(result.data);
         if (!result.data) {
