@@ -184,7 +184,7 @@ export class ApiApplication implements IApiApplication {
         const result = await this.services.Isession_service.performVerifyUsername(username);
         return {
             success: true,
-            data: !result.success, // true if available (doesn't exist)
+            data: result.success, // false if available (doesn't exist)
             log_message: result.success ? "Username is already taken" : "Username is available",
         };
     }

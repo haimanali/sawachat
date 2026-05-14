@@ -155,8 +155,6 @@ export class ClientRepository implements IClientRepository
 
         const [client_record] = result.data;
 
-        console.log(client_record);
-
         const is_match = await this.validatePassword(client_record.hash_pass, password);
         
 

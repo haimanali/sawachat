@@ -50,4 +50,12 @@ export interface ISocketContext {
     onlineStatus : "online" | "offline",
     contacts: Record<string, IContactState>,
     showToast: (msg: string) => void;
+    hasMoreMessages : boolean,
+    isLoadingMoreMsgs : boolean
+    setIsLoadingMoreMsgs : React.Dispatch<React.SetStateAction<boolean>>,
+    rooms_cursor : React.RefObject<Date | null>;
+    isLoadingMoreRooms : boolean,
+    setIsLoadingMoreRooms : React.Dispatch<React.SetStateAction<boolean>>,
+    hasMoreRooms : boolean,
+
 }
