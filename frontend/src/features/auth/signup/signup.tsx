@@ -73,8 +73,8 @@ export default function Signup() {
     try {
       const result = await apiCall(`/api/auth/username/check/${user}`, "GET");
       if (result.success) {
-        setUsernameAvailable(result.data);
-        if (!result.data) {
+        setUsernameAvailable(!result.data); // API: data=true means TAKEN → available = !data
+        if (result.data) {                  // data=true → taken → show error
           setErrorMsg(result.log_message);
         } else {
           setErrorMsg("");

@@ -48,7 +48,7 @@ describe('IT-02: Client Registration Flow (DB Layer)', () => {
   it('inserts, retrieves, and verifies a registered client record', async () => {
     const nickname = 'TestBot';
     const password = 'Test@2026';
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const [insertResult] = await pool.execute<mysql.ResultSetHeader>(
       'INSERT INTO Client (username, nickname, hash_pass) VALUES (?, ?, ?)',

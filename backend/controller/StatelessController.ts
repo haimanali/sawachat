@@ -62,7 +62,7 @@ export class StatelessController {
     private async transactionHandler(handleData: () => Promise<void>): Promise<void> {
         const conn = await DBConn.beginTransaction()
         try {
-            DBConn.runTransaction(conn, async () => {
+            await DBConn.runTransaction(conn, async () => {
                 await handleData();
             });
             await conn.commit();

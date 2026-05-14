@@ -38,4 +38,16 @@ export class SignUpService implements ISignUpService
             const r_result = await this.repository.Iclient_repo.insertClientRecord(username, nickname, password);
             return { success : true, data : r_result.data!, log_message : "Account created successfully.."};
         }
+
+        // this checks if a username is available for registration.
+        // banned accounts are treated as taken — they cannot be re-registered.
+        public async performCheckUsernameAvailability(username: string): Promise<IServiceLayerResponse> {
+            const c_result = await this.repository.Iclient_repo.checkClientExist(username);
+            // c_result.success = true  → row exists (active OR banned) → NOT available
+            // c_result.success = false → no row found                  → available
+            return {
+                success: c_result.success,
+                log_message: c_result.success ? "Username is already taken" : "Username is available",
+            };
+        }
 }

@@ -50,7 +50,7 @@ Make sure you have the following installed before starting:
 2. Import the schema file (it creates the database and all tables for you):
 
 ```bash
-mysql -u root -p < sawachat_schema.sql
+mysql -u root -p < sawachat_finalized_1_snapshot.sql
 ```
 
 > This creates the `sawachat` database and all 8 tables (`Client`, `Session`, `ChatRoom`, `RoomMembers`, `Message`, `Contact`, `Request`, `Notification`) from scratch. It uses `IF NOT EXISTS` so it is safe to re-run.
@@ -215,8 +215,34 @@ sawachat/
 │   ├── model.py               # Toxic-BERT model wrapper
 │   └── serviceContract.proto  # gRPC service definition
 │
-└── sawachat_schema.sql         # MySQL database schema (creates all tables)
+├── automated_tests/           # Vitest automated test suite (see automated_tests/README.md)
+│   ├── core.test.ts           # Unit tests (bcrypt, uuid, zod)
+│   ├── integration.test.ts    # DB integration tests
+│   ├── socket.test.ts         # Socket.IO handshake & event tests
+│   ├── latency.test.ts        # HTTP + WebSocket latency benchmarks
+│   ├── concurrency.test.ts    # 10,000-connection scalability test
+│   ├── vitest.config.ts
+│   └── package.json
+│
+└── sawachat_finalized_1_snapshot.sql  # MySQL database schema (creates all tables)
 ```
+
+---
+
+## 🧪 Automated Tests
+
+The `automated_tests/` folder contains a standalone Vitest suite that covers unit, integration, WebSocket, latency, and concurrency testing. Full details in [`automated_tests/README.md`](automated_tests/README.md).
+
+**Quick start:**
+
+```bash
+cd automated_tests
+npm install
+npm test           # runs unit + integration + socket + latency
+```
+
+> [!NOTE]
+> The test suite requires the backend running on `http://localhost:3000` for live WebSocket tests, and MySQL on `localhost` with the default credentials.
 
 ---
 

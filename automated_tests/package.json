@@ -4,14 +4,15 @@
   "description": "Automated test scripts for GP2",
   "type": "module",
   "scripts": {
-    "test": "vitest run core.test.ts integration.test.ts socket.test.ts latency.test.ts",
+    "test": "vitest run core.test.ts integration.test.ts socket.test.ts latency.test.ts --reporter=default --reporter=html --outputFile.html=reports/html/combined/index.html",
+    "tests": "npm run test",
     "test:unit": "vitest run core.test.ts",
     "test:integration": "vitest run integration.test.ts",
     "test:socket": "vitest run socket.test.ts",
     "test:implementation": "vitest run socket.test.ts",
     "test:latency": "vitest run latency.test.ts",
     "test:concurrency:vitest": "vitest run concurrency.test.ts",
-    "test:report": "vitest run core.test.ts integration.test.ts socket.test.ts latency.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/combined-junit.xml --reporter=json --outputFile.json=reports/combined-results.json --reporter=html --outputFile.html=reports/html/combined/index.html",
+    "test:report": "vitest run core.test.ts integration.test.ts socket.test.ts latency.test.ts --reporter=default --reporter=junit --outputFile.junit=reports/combined-junit.xml --reporter=json --outputFile.json=reports/combined-results.json --reporter=html --outputFile.html=reports/html/combined/index.html",
     "test:unit:report": "vitest run core.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/unit-junit.xml --reporter=json --outputFile.json=reports/unit-results.json --reporter=html --outputFile.html=reports/html/unit/index.html",
     "test:integration:report": "vitest run integration.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/integration-junit.xml --reporter=json --outputFile.json=reports/integration-results.json --reporter=html --outputFile.html=reports/html/integration/index.html",
     "test:implementation:report": "vitest run socket.test.ts --coverage --reporter=default --reporter=junit --outputFile.junit=reports/implementation-junit.xml --reporter=json --outputFile.json=reports/implementation-results.json --reporter=html --outputFile.html=reports/html/implementation/index.html",
@@ -33,6 +34,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.6",
     "@vitest/ui": "^4.1.6",
     "vitest": "^4.1.6"

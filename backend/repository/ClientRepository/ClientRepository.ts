@@ -143,7 +143,7 @@ export class ClientRepository implements IClientRepository
     }
 
     public async validateClient(username: string, password: string): Promise<IRepositoryLayerResponse<IClient>>{
-        const sql = "select user_id, username, nickname, hash_pass, is_ban, TO_BASE64(avatar), avatar_type from Client where username = ? and is_ban = false";
+        const sql = "select user_id, username, nickname, hash_pass, is_ban, TO_BASE64(avatar) as avatar, avatar_type from Client where username = ? and is_ban = false";
 
         const result = await this.db_conn.executeQuery<IClientRecord>(sql, [username]);
         
