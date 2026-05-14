@@ -46,7 +46,7 @@ export class DBConn {
             },
 
             waitForConnections: true,
-            connectionLimit: 50,
+            connectionLimit: 200,
         });
     }
 

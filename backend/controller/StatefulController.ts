@@ -6,6 +6,7 @@ import { wsSession } from "./wsSession.js";
 import { DBConn } from "../repository/DBConn.js";
 import { IApiApplication } from "../Application/IApiApplication.js";
 import { IAppLayerResponse, IPayloadInterface, IPayloadResponseType } from "../responseFormat.js";
+import { ConnectionManager } from "./ConnectionManager.js";
 
 // this controller keeps track of all online users and active rooms
 // it handles sending messages to the right people in real time
@@ -146,11 +147,11 @@ export class StatefulController {
         };
     }
 
-    public static getInstance(http_server: http.Server, Iapp_layer: IApiApplication): StatefulController {
+    public static getInstance(http_server: http.Server, conn_mang : ConnectionManager, Iapp_layer: IApiApplication): StatefulController {
         if (StatefulController.instance)
             return StatefulController.instance
 
-        StatefulController.instance = new StatefulController(http_server, Iapp_layer);
+        StatefulController.instance = new StatefulController(http_server, conn_mang, Iapp_layer);
         return StatefulController.instance;
     }
 
@@ -167,11 +168,12 @@ export class StatefulController {
     //ws manager
     private io_server: Server;
     private static instance: StatefulController;
-
+    private conn_mang : ConnectionManager;
     private app_layer: IApiApplication;
 
-    private constructor(http_server: http.Server, Iapp_layer: IApiApplication) {
+    private constructor(http_server: http.Server, conn_mang : ConnectionManager, Iapp_layer: IApiApplication) {
         this.app_layer = Iapp_layer;
+        this.conn_mang = conn_mang;
 
         this.io_server = new Server(http_server, {
             cors: {
@@ -194,14 +196,23 @@ export class StatefulController {
             if (!session_id)
                 return next(new Error(IPayloadResponseType.ONAUTH_FAIL));
 
-            const result = await this.app_layer.authenticateBySessionID(session_id);
+            let client = conn_mang.DispatchSession(session_id);
+            if (client)
+            {
+                soc.data.client = client;
+            }
+            else
+            {
+                const result = await this.app_layer.authenticateBySessionID(session_id);
+    
+                if (!result.success) 
+                    return next(new Error("Auth failed")); 
+    
+                client = result.internal!;
+                conn_mang.dispatcher.set(session_id, result.internal!);
+                soc.data.client = client;
+            }
 
-            if (!result.success) 
-                return next(new Error("Auth failed")); 
-
-            const client: IClient = result.internal!;
-
-            soc.data.client = client;
             next();
         });
 

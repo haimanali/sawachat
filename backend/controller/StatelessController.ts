@@ -5,25 +5,32 @@ import cookieParser from 'cookie-parser'
 import { ILoginRequest, ISignUpRequest, login_schema, signup_schema } from '../requestFormat.js'
 import { DBConn } from "../repository/DBConn.js";
 import { IApiApplication } from '../Application/IApiApplication.js'
+import { IClient } from '../domain/IClient.js'
+import { ConnectionManager } from './ConnectionManager.js'
 
 // this controller handles normal rest api requests like login and signup
 // it also sets up express middleware like cors and cookie-parser
 export class StatelessController {
 
-    public static getInstance(app: express.Express, Iapp_layer: IApiApplication): StatelessController {
+    public static getInstance(app: express.Express, conn_mang : ConnectionManager, Iapp_layer: IApiApplication): StatelessController {
         if (StatelessController.instance)
             return StatelessController.instance;
 
-        StatelessController.instance = new StatelessController(app, Iapp_layer);
+        StatelessController.instance = new StatelessController(app, conn_mang, Iapp_layer);
         return StatelessController.instance;
     }
 
     private static instance: StatelessController;
     private app_layer: IApiApplication;
     private app: Express;
-    private constructor(app: express.Express, Iapp_layer: IApiApplication) {
+    private conn_mang : ConnectionManager;
+    
+
+    private constructor(app: express.Express, conn_mang : ConnectionManager, Iapp_layer: IApiApplication) {
         this.app_layer = Iapp_layer;
         this.app = app;
+        this.conn_mang = conn_mang;
+
 
         // we allow the frontend to talk to the backend using cors
         this.app.use(cors({
@@ -137,6 +144,7 @@ export class StatelessController {
                 return;
             }
 
+            this.conn_mang.dispatcher.set(session_id, payload.internal!);
             res.status(200).json({
                 success: payload.success,
                 data: payload.data,
@@ -159,6 +167,8 @@ export class StatelessController {
             }
 
             const payload = await this.app_layer.authenticateBySessionID(session_id as string);
+            this.conn_mang.dispatcher.set(session_id, payload.internal!);
+
             res.status(200).json({
                 success: payload.success,
                 data: payload.data,
@@ -212,6 +222,8 @@ export class StatelessController {
             });
 
         }));
-
     }
+
+
+
 }

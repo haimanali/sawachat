@@ -258,6 +258,8 @@ export class wsSession {
                     const cursor = data.payload.cursor;
                     const room_public_id = data.payload.room_public_id;
 
+                    console.log(cursor);
+
                     const result = await this.app_layer.fetchUserMessages(room_public_id, cursor);
 
                     this.write(IPayloadResponseType.ONLOAD_MESSAGES, this.stateful_controller.preparePayload(result));
@@ -314,7 +316,7 @@ export class wsSession {
                         //broadcast room to clients
                         this.write(IPayloadResponseType.ONCREATE_CONTACT, this.stateful_controller.preparePayload({ success: result.success, data: { room: result.data!.r_room, contact: toPublic(result.internal!.s_client), onlineState: s_client_online ? "online" : "offline" }, log_message: result.log_message }));
                         this.stateful_controller.broadcastRoom(IPayloadResponseType.ONCREATE_CONTACT, result.internal!.s_client.user_id, this, this.stateful_controller.preparePayload({ success: result.success, data: { room: result.data!.s_room, contact: toPublic(this.client), onlineState: this.is_online ? "online" : "offline" }, log_message: result.log_message }));
-                        console.log({ room: result.data!.s_room, contact: toPublic(this.client), onlineState: this.is_online ? "online" : "offline" });
+
                         const notificaiton = await this.app_layer.pushNotification(result.internal!.s_client.user_id, ENotificationType.CREATE_CONTACT, { type: ENotificationType.CREATE_CONTACT, room: result.data!.s_room });
                         if (notificaiton.success)
                             this.stateful_controller.broadcastNotificationToUser(IPayloadResponseType.ONTRIGGER_NOTIFICATION, result.internal!.s_client.user_id, this, this.stateful_controller.preparePayload(notificaiton));

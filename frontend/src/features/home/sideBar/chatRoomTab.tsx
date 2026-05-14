@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSocket } from "../../../hooks/useSocket";
 import { useApp } from "../../../hooks/useApp";
 import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
@@ -30,8 +30,10 @@ const DecryptedPreview = React.memo(({ contentx64, ivx64, encKey }: { contentx64
 export default function ChatRoomTab() {
     const { t } = useApp();
     const { socket, userState,
-        rooms, activeRoomSetup, activeRoomRef, setActiveRoomSetup, loadingRooms, setMsgInputDOM, setRoomSettingsMenu,
-        roomCache, messages_cursor, setHasMoreMessages, setMessages, notifications, contacts } = useSocket();
+        rooms, activeRoomSetup, activeRoomRef, setActiveRoomSetup, loadingRooms, setMsgInputDOM, setRoomSettingsMenu, isLoadingMoreRooms, setIsLoadingMoreRooms,
+        hasMoreRooms, rooms_cursor, roomCache, messages_cursor, setHasMoreMessages, setMessages, notifications, contacts } = useSocket();
+
+    const room_list_ref = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (!socket?.connected || !activeRoomSetup)
@@ -70,6 +72,34 @@ export default function ChatRoomTab() {
 
     }, [activeRoomSetup]);
 
+    useLayoutEffect(() => {
+
+    });
+
+    const handleOnScroll = () => {
+        const container = room_list_ref.current;
+
+        // GUARD: Stop if we are already fetching, don't have a container, or reached the end
+        if (!container || isLoadingMoreRooms || !hasMoreRooms) return;
+
+        // CHECK BOTTOM: If the user is within 50px of the bottom of the list
+        const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+
+        if (isNearBottom) {
+            setIsLoadingMoreRooms(true);
+            handleLoadMore();
+        }
+    };
+
+    const handleLoadMore = () => {
+        socket.emit("message", {
+            type: IPayloadRequestType.LOAD_ROOMS,
+            payload: {
+                cursor: rooms_cursor.current!,
+            },
+        });
+    };
+
     return (
         <div className="rooms-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {loadingRooms && (
@@ -86,7 +116,7 @@ export default function ChatRoomTab() {
             )}
 
             {!loadingRooms && (
-                <div className="chat-list" id="chat-list" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                <div ref={room_list_ref} onScroll={handleOnScroll} className="chat-list" id="chat-list" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                     {rooms.length === 0 ? (
                         <div style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                             <p style={{ color: "rgba(0, 0, 0, 0.4)" }}>{t('no_rooms')}</p>

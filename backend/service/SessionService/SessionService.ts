@@ -70,8 +70,7 @@ export class SessionService implements ISessionService {
     // checks if a username exists in our system
     public async performVerifyUsername(username: string): Promise<IServiceLayerResponse<IClient>> {
         const cl_result = await this.repository.Iclient_repo.checkClientExist(username);
-
-        if (!cl_result.success || cl_result.data?.is_ban) {
+        if (cl_result.success || cl_result.data?.is_ban) {
             return { success: false, log_message: "either this user doesn't exists or has been suspended" };
         }
 

@@ -58,6 +58,7 @@ import {StatefulController} from './controller/StatefulController.js'
 
 //layer objects
 import { Repository, Services } from './componantParams.js';
+import { ConnectionManager } from './controller/ConnectionManager.js';
 
 
 
@@ -111,9 +112,10 @@ const services : Services = {
 
 
 const app_layer : IApiApplication = ApiApplication.getInstance(services);
+const conn_mang = ConnectionManager.getInstance(); 
+const stateless_controller : StatelessController = StatelessController.getInstance(app, conn_mang, app_layer);
+const stateful_controller : StatefulController = StatefulController.getInstance(server, conn_mang, app_layer);
 
-const stateless_controller : StatelessController = StatelessController.getInstance(app, app_layer);
-const stateful_controller : StatefulController = StatefulController.getInstance(server, app_layer);
 
 // start the server on port 3000
 server.listen(3000, () => {console.log("server listening....")})   

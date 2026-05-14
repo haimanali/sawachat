@@ -53,12 +53,14 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
     const [hasMoreRooms, setHasMoreRooms] = useState<boolean>(true);
     const [activeRoomSetup, setActiveRoomSetup] = useState<IRoomPublic | null>(null);
     const [roomSettingsMenu, setRoomSettingsMenu] = useState<boolean>(false);
+    const [isLoadingMoreRooms, setIsLoadingMoreRooms] = useState<boolean>(false);
 
     const [requests, setRequests] = useState<IRequestPublic[]>([]);
     const [hasMoreRequests, setHasMoreRequests] = useState<boolean>(true);
 
     const [messages, setMessages] = useState<IMessagePublic[]>([]);
     const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true);
+    const [isLoadingMoreMsgs, setIsLoadingMoreMsgs] = useState<boolean>(false);
     const [msgInputDOM, setMsgInputDOM] = useState<boolean>(true);
 
     const [settingsPOPUP, setSettingsPOPUP] = useState<boolean>(false);
@@ -66,7 +68,6 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
     const [contactRequestError, setContactRequestError] = useState<string>("");
     const [addContactUsername, setAddContactUsername] = useState<string>("");
 
-    const requests_cursor = useRef<Date | null>(null);
     const [loadingRequests, setLoadingRequests] = useState<boolean>(true);
 
     const rooms_cursor = useRef<Date | null>(null);
@@ -80,7 +81,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
     const [activeTab, setActive] = useState<"rooms" | "requests">("rooms");
 
-    useEffect( () => {
+    useEffect(() => {
         rooms_ref.current = rooms;
     }, [rooms]);
 
@@ -351,9 +352,6 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                     return;
                 }
 
-                requests_cursor.current = request_items[request_items.length - 1].created_at;
-
-
                 setRequests((prev) => {
                     const existing_ids = new Set(prev.map(req => req.public_id));
                     const new_requests = request_items.filter((req) => !existing_ids.has(req.public_id));
@@ -370,6 +368,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
             ws.on(IPayloadResponseType.ONLOAD_MESSAGES, async (payload: IPayloadInterface<IMessagePublic[]>) => {
                 const encmessage_items: IMessagePublic[] = payload.data!;
                 setLoadingMessages(false);
+                setIsLoadingMoreMsgs(false);
 
                 if (encmessage_items.length === 0) {
                     setHasMoreMessages(false);
@@ -403,15 +402,19 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                 });
 
                 messages_cursor.current = encmessage_items[encmessage_items.length - 1].created_at;
+                console.log(messages_cursor.current!);
 
                 setRoomCache((prev) => {
 
                     const curr_room_msgs = prev[activeRoomRef.current!.public_id]?.messages || [];
 
+                    const existing_cache_ids = new Set(curr_room_msgs.map(m => m.public_id));
+                    const unique_for_cache = decrpyt_messages.filter((msg) => !existing_cache_ids.has(msg.public_id));
+
                     return {
                         ...prev,
                         [activeRoomRef.current!.public_id]: {
-                            messages: [...decrpyt_messages, ...curr_room_msgs],
+                            messages: [...unique_for_cache, ...curr_room_msgs],
                             cursor: messages_cursor.current,
                             hasMore: !(decrpyt_messages.length < IPayloadRequestType.LIMIT),
                             msgInputDOM: activeRoomRef.current!.is_active,
@@ -566,13 +569,13 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                     }));
                 }
 
-                const enc_key = isActiveRoom ? activeRoomRef.current?.enc_key : rooms_ref.current.find( r => r.public_id === enc_message.room_public_id)?.enc_key;
+                const enc_key = isActiveRoom ? activeRoomRef.current?.enc_key : rooms_ref.current.find(r => r.public_id === enc_message.room_public_id)?.enc_key;
                 if (!enc_key)
                     return;
 
                 const crypto_key = await initKey(enc_key);
                 const decrypted_text = await msgDecryption(enc_message.content, crypto_key, payload.data!.iv);
-                
+
                 const fullMessage: IMessagePublic = {
                     ...enc_message,
                     is_sent: true,
@@ -580,7 +583,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                     is_read: false,
                     content: decrypted_text,
                 };
-                
+
                 setRoomCache((prev) => {
                     const curr_room = prev[roomID];
                     if (!curr_room) return prev;
@@ -589,7 +592,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                         [roomID]: { ...curr_room, messages: [...curr_room.messages, fullMessage] }
                     };
                 });
-                
+
                 if (!isActiveRoom)
                     return;
 
@@ -674,8 +677,8 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                             : room
                     ));
                     // Update active room if it's the one currently open
-                    setActiveRoomSetup(prev => (prev && prev.room_subname === updatedUsername) 
-                        ? { ...prev, room_name: payload.data!.nickname } 
+                    setActiveRoomSetup(prev => (prev && prev.room_subname === updatedUsername)
+                        ? { ...prev, room_name: payload.data!.nickname }
                         : prev
                     );
                 } else {
@@ -683,7 +686,7 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                 }
             });
 
-            ws.on(IPayloadResponseType.ONUPDATE_AVATAR, (payload: IPayloadInterface<{ username?: string, avatar: string , type : string}>) => {
+            ws.on(IPayloadResponseType.ONUPDATE_AVATAR, (payload: IPayloadInterface<{ username?: string, avatar: string, type: string }>) => {
                 const updatedUsername = payload.data!.username;
                 if (updatedUsername && updatedUsername !== userState?.username) {
                     setContacts(prev => {
@@ -704,12 +707,12 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                             : room
                     ));
                     // Update active room if it's the one currently open
-                    setActiveRoomSetup(prev => (prev && prev.room_subname === updatedUsername) 
+                    setActiveRoomSetup(prev => (prev && prev.room_subname === updatedUsername)
                         ? { ...prev } // This triggers a re-render which pulls fresh data from contacts
                         : prev
                     );
                 } else {
-                    setUserState(prev => prev ? { ...prev, avatar: payload.data!.avatar, avatar_type : payload.data!.type } : prev);
+                    setUserState(prev => prev ? { ...prev, avatar: payload.data!.avatar, avatar_type: payload.data!.type } : prev);
                 }
             });
 
@@ -943,7 +946,6 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
 
                 socketRef.current = null;
                 activeRoomRef.current = null;
-                requests_cursor.current = null;
                 rooms_cursor.current = null;
                 messages_cursor.current = null;
             }
@@ -987,6 +989,15 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
         onlineStatus,
         contacts,
         showToast,
+        hasMoreMessages,
+        isLoadingMoreMsgs,
+        setIsLoadingMoreMsgs,
+        rooms_cursor,
+        isLoadingMoreRooms,
+        setIsLoadingMoreRooms,
+        hasMoreRooms,
+
+        
     };
 
     return (

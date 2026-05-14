@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { msgEncrytion } from "../../../services/msgEncrytion";
 import { initKey } from "../../../services/initKey";
 import { IPayloadRequestType } from "../../../interfaces/payload/EPaylaod";
@@ -16,9 +16,13 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
     const {
         socket,
         messages,
+        messages_cursor,
         loadingMessages,
         msgInputDOM,
         activeRoomSetup,
+        isLoadingMoreMsgs,
+        setIsLoadingMoreMsgs,
+        hasMoreMessages,
         activeRoomRef,
         userState,
         onlineStatus,
@@ -27,10 +31,19 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
     } = useSocket();
 
     const messageEnd_anchor = useRef<HTMLDivElement | null>(null);
-    const [msgInput, setMsgInput] = useState<string>("");
-    
+    const messagesList_Ref = useRef<HTMLDivElement | null>(null);
+
+    const prev_scroll_height_ref = useRef<number>(0);
+    const inital_load = useRef<boolean>(true);
+
+    useEffect( () => {
+        inital_load.current = true;
+        prev_scroll_height_ref.current = 0;
+    }, [activeRoomSetup?.public_id] );
+
     // UI states
     const [contactInfoModal, setContactInfoModal] = useState<boolean>(false);
+    const [msgInput, setMsgInput] = useState<string>("");
 
     // Wallpaper color state
     const [roomWallpaper, setRoomWallpaper] = useState<string | null>(null);
@@ -69,15 +82,15 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
     // this lets you download your chat history as a text file
     const handleExportChat = () => {
         if (!activeRoomSetup) return;
-        
+
         let content = `SawaChat Export - ${activeRoomSetup.room_name}\n`;
         content += `Generated on: ${new Date().toLocaleString()}\n\n`;
-        
+
         messages.forEach(msg => {
             const time = new Date(msg.created_at).toLocaleString();
             content += `[${time}] ${msg.nickname}: ${msg.content}\n`;
         });
-        
+
         const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -87,7 +100,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         setRoomSettingsMenu(false);
     };
 
@@ -105,10 +118,28 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
         socket.emit("message", payload);
     }, [messages.length, onlineStatus]);
 
+
+    useLayoutEffect(() => {
+        const container = messagesList_Ref.current;
+
+        // Only run this logic if we have a saved height from a "Load More" action
+        if (container && prev_scroll_height_ref.current > 0 && !inital_load.current) {
+            // Calculate the difference between the new height and the old height
+            const heightDiff = container.scrollHeight - prev_scroll_height_ref.current;
+
+            // Push the scroll position down by the height of the new messages
+            container.scrollTop = heightDiff;
+
+            // Reset the ref so this doesn't trigger on normal message sends
+            prev_scroll_height_ref.current = 0;
+        }
+    }, [messages]);
+
     useEffect(() => {
         const scrollToLatest = () => {
             const parentContainer = messageEnd_anchor.current?.parentElement;
-            if (parentContainer) {
+            if (parentContainer && inital_load.current) {
+                inital_load.current = false;
                 const atBottom = parentContainer.scrollHeight - parentContainer.scrollTop <= parentContainer.clientHeight;
                 if (atBottom) {
                     messageEnd_anchor.current?.scrollIntoView({ behavior: "instant" });
@@ -165,10 +196,40 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
         }
     };
 
+    const handleLoadMore = () => {
+
+        socket.emit("message", {
+            type: IPayloadRequestType.LOAD_MESSAGES,
+            payload: {
+                room_public_id: activeRoomRef.current!.public_id,
+                cursor: messages_cursor.current!,
+            },
+        });
+    };
+
+    const handleScroll = () => {
+
+        const container = messagesList_Ref.current;
+
+        if (
+            !container ||
+            !activeRoomRef.current ||
+            isLoadingMoreMsgs ||
+            !hasMoreMessages
+        ) return;
+
+        if (container.scrollTop <= 50) {
+            prev_scroll_height_ref.current = container.scrollHeight;
+
+            setIsLoadingMoreMsgs(true);
+            handleLoadMore();
+        }
+    };
+
 
     return (
         <>
-            <main className="chat-main" onMouseMove={ handleNotification }>
+            <main className="chat-main" onMouseMove={handleNotification}>
 
                 {!activeRoomSetup ? (
 
@@ -185,16 +246,16 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                         {/* 1. THE HEADER (Always visible if room is selected) */}
                         <header className="chat-header">
                             {/* Mobile hamburger — only visible on small screens */}
-                            <button 
-                                className="icon-btn mobile-menu-btn" 
-                                onClick={onOpenSidebar} 
+                            <button
+                                className="icon-btn mobile-menu-btn"
+                                onClick={onOpenSidebar}
                                 aria-label="Open sidebar"
                                 style={{ flexShrink: 0 }}
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width: "22px", height: "22px"}}>
-                                    <line x1="3" y1="6" x2="21" y2="6"/>
-                                    <line x1="3" y1="12" x2="21" y2="12"/>
-                                    <line x1="3" y1="18" x2="21" y2="18"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "22px", height: "22px" }}>
+                                    <line x1="3" y1="6" x2="21" y2="6" />
+                                    <line x1="3" y1="12" x2="21" y2="12" />
+                                    <line x1="3" y1="18" x2="21" y2="18" />
                                 </svg>
                             </button>
                             <UserAvatar mode={contacts[activeRoomSetup.room_subname]?.onlineState || "offline"} nickname={contacts[activeRoomSetup.room_subname]?.client.nickname || "User"} image={contacts[activeRoomSetup.room_subname]?.client.avatar} type={contacts[activeRoomSetup.room_subname]?.client.avatar_type} />
@@ -242,14 +303,14 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                         </header>
 
                         {/* 2. THE MESSAGES AREA (Toggle between Loader and List) */}
-                        <div className="chat-messages" id="chat-messages" style={{
+                        <div ref={messagesList_Ref} onScroll={handleScroll} className="chat-messages" id="chat-messages" style={{
                             background: roomWallpaper ? roomWallpaper : "none",
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                             position: "relative"
                         }}>
-                            {roomWallpaper && <div style={{position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.2)", zIndex: 0}}></div>}
-                            
+                            {roomWallpaper && <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.2)", zIndex: 0 }}></div>}
+
                             {loadingMessages ? (
                                 <div className="chat-loader-container is-loading" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
                                     <div className="btn-loader-wrap">
@@ -264,7 +325,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                                     </div>
                                 </div>
                             ) : (
-                                <div className="messages-list" style={{zIndex: 1, position: "relative"}}>
+                                <div className="messages-list" style={{ zIndex: 1, position: "relative" }}>
                                     {messages.length === 0 ? (
                                         <div className="empty-state-text" style={{ textAlign: "center", color: "var(--text-muted)", marginTop: "20px" }}>
                                             No messages here yet. Start the conversation!
@@ -280,7 +341,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                                             return (
                                                 <div key={msg.public_id} className={`message-row ${isMe ? "own-message" : ""}`}>
                                                     {!isMe && (
-                                                        <UserAvatar image={contacts[msg.username].client.avatar} type={contacts[msg.username].client.avatar_type} nickname={msg.nickname}/>
+                                                        <UserAvatar image={contacts[msg.username].client.avatar} type={contacts[msg.username].client.avatar_type} nickname={msg.nickname} />
                                                     )}
                                                     <div className="message-content-wrapper">
                                                         <div className={`message-bubble ${msg.is_del ? 'deleted-message' : ''}`}>
@@ -388,7 +449,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                             <h2 style={{ fontSize: "1.3rem", fontWeight: 700 }}>{t('change_wallpaper')}</h2>
                             <button className="icon-btn" onClick={() => setShowWallpaperPicker(false)}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
@@ -423,7 +484,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                                         }}
                                     >
                                         {!opt.value && (
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-sub)" strokeWidth="2" style={{width: "22px", height: "22px"}}>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-sub)" strokeWidth="2" style={{ width: "22px", height: "22px" }}>
                                                 <line x1="18" y1="6" x2="6" y2="18" />
                                                 <line x1="6" y1="6" x2="18" y2="18" />
                                             </svg>
@@ -447,7 +508,7 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                     <div className="modal" style={{ width: "350px", textAlign: "center", padding: "32px 24px" }} onClick={(e) => e.stopPropagation()}>
                         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "-16px" }}>
                             <button className="icon-btn" onClick={() => setContactInfoModal(false)}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
@@ -455,9 +516,9 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                         </div>
                         <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
                             <div style={{ width: "100px", height: "100px", fontSize: "2.5rem" }}>
-                                <UserAvatar 
-                                    size="100%" 
-                                    nickname={contacts[activeRoomSetup.room_subname].client.nickname} 
+                                <UserAvatar
+                                    size="100%"
+                                    nickname={contacts[activeRoomSetup.room_subname].client.nickname}
                                     image={contacts[activeRoomSetup.room_subname].client.avatar}
                                     type={contacts[activeRoomSetup.room_subname].client.avatar_type}
                                     mode={contacts[activeRoomSetup.room_subname].onlineState}
@@ -470,17 +531,17 @@ export default function ChatArea({ onOpenSidebar }: { onOpenSidebar?: () => void
                         <p style={{ color: "var(--text-sub)", fontSize: "1rem", marginBottom: "24px" }}>
                             @{contacts[activeRoomSetup.room_subname].client.username}
                         </p>
-                        
+
                         <div style={{ background: "var(--bg-subtle)", borderRadius: "8px", padding: "16px", textAlign: "left" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                 </svg>
                                 <span style={{ fontSize: "0.9rem", color: "var(--text)" }}>End-to-End Encrypted</span>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{width: "20px", height: "20px"}}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" style={{ width: "20px", height: "20px" }}>
                                     <circle cx="12" cy="12" r="10" />
                                     <polyline points="12 6 12 12 16 14" />
                                 </svg>
