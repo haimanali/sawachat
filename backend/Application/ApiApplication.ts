@@ -181,11 +181,13 @@ export class ApiApplication implements IApiApplication {
     }
 
     public async checkUsernameAvailability(username: string): Promise<IAppLayerResponse<boolean>> {
-        const result = await this.services.Isession_service.performVerifyUsername(username);
+        // performCheckUsernameAvailability uses checkClientExist directly,
+        // so banned accounts (success:true) are also reported as taken.
+        const result = await this.services.Isignup_service.performCheckUsernameAvailability(username);
         return {
             success: true,
-            data: result.success, // false if available (doesn't exist)
-            log_message: result.success ? "Username is already taken" : "Username is available",
+            data: result.success,   // true = taken (active or banned), false = available
+            log_message: result.log_message,
         };
     }
 

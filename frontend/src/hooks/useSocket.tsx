@@ -175,12 +175,6 @@ export const SocketProvider = ({ children, userState, setUserState, status, navi
                 const state = payload.data!.state;
                 setOnlineStatus(state);
                 online_status_ref.current = state;
-
-                switch (state) {
-                    case 'online': { showToast("welcome back!"); } break;
-                    case 'offline': { showToast("Status changed to Offline due to long inactivity"); } break;
-                };
-
             });
 
             ws.on(IPayloadResponseType.ONONLINE_STATUS, (payload: IPayloadInterface<{ username: string, state: 'online' | 'offline' }>) => {

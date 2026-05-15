@@ -61,19 +61,6 @@ export class wsSession {
             this.stateful_controller.clientDisconnect(this.client.user_id, this);
         }, 1000 * 60 * 60 * 3);
 
-
-    private graceful_disconnection : NodeJS.Timeout | null = null;
-
-    private cancelPendingDisconnection = () : boolean => {
-        if (this.graceful_disconnection)
-        {
-            clearTimeout(this.graceful_disconnection);
-            this.graceful_disconnection = null;
-            return true;
-        }
-        return false
-    };
-
     constructor(soc: Socket, stateful_controller: StatefulController, Iapp_layer: IApiApplication, client: IClient) {
         this.soc = soc;
         this.client = client;
@@ -108,20 +95,20 @@ export class wsSession {
 
         this.soc.on(IPayloadRequestType.ONLINE_STATUS, async () => this.stateful_controller.errorHandler(this, async () => {
 
-            const is_connecting = this.cancelPendingDisconnection();
             
             clearTimeout(this.online_idle_timeout);
             this.online_idle_timeout = setTimeout(() => {
                 this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
                 this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts...
                 this.is_online = false;
-            }, 1000 * 60 * 5);
+            }, 1000 * 60 * 5);  
 
-            if (!this.is_online && !is_connecting) {
+            if (!this.is_online ) {
                 this.is_online = true;
                 this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "online" }, log_message: "user state has been changed" }));
                 this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'online' }, log_message: "user status change" })); // to contacts... //on
             }
+
         })());
 
         this.soc.on("message", async (raw_data) => this.stateful_controller.
@@ -137,14 +124,18 @@ export class wsSession {
             clearTimeout(this.online_idle_timeout);
             clearTimeout(this.session_idle_timeout);
 
-            this.graceful_disconnection = setTimeout( () => {
+            setTimeout( () => {
                 this.is_online = false;
+
+                const pending_disconnection = [...this.stateful_controller.active_clients.get(this.client.user_id) || [] ].filter( wsSession => wsSession.is_online === true);
+                if (pending_disconnection.length > 0)
+                    return;
 
                 this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'offline' }, log_message: "user status change" })); // to contacts... //off
                 this.write(IPayloadResponseType.ONUPDATE_USER_ONLINE_STATUS, this.stateful_controller.preparePayload({ success: true, data: { state: "offline" }, log_message: "user state has been changed" }));
                 this.stateful_controller.clientDisconnect(this.client.user_id, this);
 
-            }, 1000 * 10);
+            }, 1000 * 5); 
 
         })
     }
@@ -182,12 +173,15 @@ export class wsSession {
                         get_contacts.internal?.forEach((contactID) =>
                             this.stateful_controller.setClientContact(this.client.user_id, contactID)
                         );
-
-                        this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'online' }, log_message: "user status change" })); // to contacts...
                     }
 
+                    // Always broadcast — covers both fresh connect and fast reconnect.
+                    // On reconnect the contact map is already populated (graceful timer),
+                    // so the has() guard above skips the DB populate but we still notify contacts.
+                    this.stateful_controller.broadcastConnectionState(IPayloadResponseType.ONONLINE_STATUS, this.client.user_id, this, this.stateful_controller.preparePayload({ success: true, data: { username: this.client.username, state: 'online' }, log_message: "user status change" }));
                     const contactStatePayload = get_contacts.data?.map((contact, i) => {
-                        const isActive = this.stateful_controller.active_clients.has(get_contacts.internal![i]);
+                        const session = this.stateful_controller.active_clients.get(get_contacts.internal![i]);
+                        const isActive = session && session.size > 0;
 
                         return {
                             client: contact,
@@ -257,8 +251,6 @@ export class wsSession {
                 {
                     const cursor = data.payload.cursor;
                     const room_public_id = data.payload.room_public_id;
-
-                    console.log(cursor);
 
                     const result = await this.app_layer.fetchUserMessages(room_public_id, cursor);
 
