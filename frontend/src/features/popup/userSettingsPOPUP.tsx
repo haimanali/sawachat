@@ -161,7 +161,24 @@ export default function UserSettingsPOPUP() {
                         </svg>
                     </div>
                 </div>
-
+              <div>  petro  </div>
+              <div className="setting-row">
+                    <div>
+                        <strong>{t('language')}</strong>
+                        <p style={{ fontSize: "0.85rem", color: "var(--text-sub)", marginTop: "4px" }}>{t('language_sub')}</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: language === 'en' ? 'var(--primary)' : 'var(--text-sub)' }}>EN</span>
+                        <div
+                            className={`toggle-switch ${language === 'ar' ? 'active' : ''}`}
+                            id="language-toggle"
+                            role="switch"
+                            aria-checked={language === 'ar'}
+                            onClick={() => setLanguage(prev => prev === 'en' ? 'ar' : 'en')}
+                        ></div>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: language === 'ar' ? 'var(--primary)' : 'var(--text-sub)' }}>AR</span>
+                    </div>
+                </div>
                 <div className="setting-row">
                     <div>
                         <strong>{t('language')}</strong>
